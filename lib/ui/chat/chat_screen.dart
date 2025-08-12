@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:clipboard/clipboard.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:image_picker/image_picker.dart' as picker;
 import 'package:markdown/markdown.dart' as md;
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' show parse;
@@ -103,6 +105,23 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   bool isQuestion1 = false;
   bool isQuestion2 = false;
+
+  final picker.ImagePicker _imagePicker = picker.ImagePicker();
+  picker.XFile? _pickedFile;
+  
+  Future<void> _pickImage() async {
+    final picker.XFile? image = await _imagePicker.pickImage(
+      source: picker.ImageSource.gallery,
+    );
+    if (image != null) {
+      setState(() {
+        _pickedFile = image;
+      });
+      print("Picked file path: ${image.path}");
+    } else {
+      print("No image selected");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -427,112 +446,180 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         ),
                       ),
                       15.toDouble().hs,
-                      Row(
+                      
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: TextField(
-                              onTapOutside: (event) {
-                                FocusManager.instance.primaryFocus?.unfocus();
-                              },
-                              controller: Utility.promptController,
-                              autofocus: true,
-                              style: TextStyle(
-                                color: AppColor.white,
-                                fontFamily: 'gelasio',
-                              ),
-                              keyboardType: TextInputType.text,
-                              keyboardAppearance: lightDarkController.isLight ? Brightness.light : Brightness.dark,
-                              maxLength: 500,
-                              minLines: 1,
-                              cursorColor: AppColor.white,
-                              maxLines: 10,
-                              onChanged: (value) {
-                                if (mounted) {
-                                  setState(() {});
-                                }
-                              },
-                              onSubmitted: (value) {
-                                if (!getData) {
-                                  sendMessage();
-                                } else {
-                                  flutterToastCenter("Waiter Few Seconds...");
-                                }
-                              },
-                              buildCounter: (context, {required int? currentLength, required bool? isFocused, required int? maxLength}) {
-                                return Visibility(
-                                  visible: Utility.promptController.text != "",
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      IconButton(
-                                        onPressed: () {
-                                          Utility.promptController.text = "";
-                                          if (mounted) {
-                                            setState(() {});
-                                          }
-                                        },
-                                        icon: Icon(
-                                          CupertinoIcons.clear_circled,
-                                          color: AppColor.white,
-                                        ),
-                                      ),
-                                      appText(title: "${Utility.promptController.text.length}/$maxLength", color: AppColor.white, fontWeight: FontWeight.w400, fontSize: 12, textAlign: TextAlign.center),
-                                    ],
+                          // ✅ Show image preview above text field
+                          if (_pickedFile != null)
+                            Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(
+                                    File(_pickedFile!.path),
+                                    height: 100,
+                                    width: 100,
+                                    fit: BoxFit.cover,
                                   ),
-                                );
-                              },
-                              decoration: InputDecoration(
-                                fillColor: AppColor.containerColor,
-                                filled: true,
-                                isDense: true,
-                                contentPadding: const EdgeInsets.fromLTRB(20, 15, 0, 15),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(28)),
-                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColor.borderColor), borderRadius: BorderRadius.circular(28)),
-                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColor.borderColor), borderRadius: BorderRadius.circular(28)),
-                                suffixIcon: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    /*InkWell(
-                                      onTap: () {
-                                        if (!isListening) {
-                                          onListen();
-                                        } else {
-                                          _speech.stop();
-                                        }
-                                        isListening = !isListening;
-                                        setState(() {});
-                                      },
-                                      child: Image(image: AssetImage(isListening ? "assets/ic_Mic1.png" : "assets/ic_Mic.png"), height: 30, width: 25, fit: BoxFit.cover),
-                                    ),
-                                    5.toDouble().ws,*/
-                                    InkWell(
-                                      onTap: () async {
-                                        if (!getData) {
-                                          sendMessage();
-                                        } else {
-                                          flutterToastCenter("Waiter Few Seconds...");
-                                        }
-                                      },
-                                      child: ImageWidget(
-                                        imageUrl: SvgAssetsData.icSendToggle,
-                                        width: 30,
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _pickedFile = null;
+                                      });
+                                    },
+                                    child: Container(
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      padding: const EdgeInsets.all(4),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 16,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                    5.toDouble().ws,
-                                  ],
+                                  ),
                                 ),
-                                hintText: "Type your medication / synthetic vitamin",
-                                hintMaxLines: 1,
-                                hintStyle: TextStyle(
-                                  color: AppColor.c949BA5, fontWeight: FontWeight.w400, fontSize: 14,
-                                  fontFamily: 'gelasio',
+                              ],
+                            ),
+
+                          8.toDouble().hs, // ← spacing between preview & text field
+
+                          // ✅ Your existing Row (unchanged except for _pickImage)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  onTapOutside: (event) {
+                                    FocusManager.instance.primaryFocus?.unfocus();
+                                  },
+                                  controller: Utility.promptController,
+                                  autofocus: true,
+                                  style: TextStyle(
+                                    color: AppColor.white,
+                                    fontFamily: 'gelasio',
+                                  ),
+                                  keyboardType: TextInputType.text,
+                                  keyboardAppearance:
+                                      lightDarkController.isLight ? Brightness.light : Brightness.dark,
+                                  maxLength: 500,
+                                  minLines: 1,
+                                  cursorColor: AppColor.white,
+                                  maxLines: 10,
+                                  onChanged: (value) {
+                                    if (mounted) {
+                                      setState(() {});
+                                    }
+                                  },
+                                  onSubmitted: (value) {
+                                    if (!getData) {
+                                      sendMessage();
+                                    } else {
+                                      flutterToastCenter("Wait Few Seconds...");
+                                    }
+                                  },
+                                  buildCounter: (context,
+                                      {required int? currentLength,
+                                      required bool? isFocused,
+                                      required int? maxLength}) {
+                                    return Visibility(
+                                      visible: Utility.promptController.text != "",
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          IconButton(
+                                            onPressed: () {
+                                              Utility.promptController.text = "";
+                                              if (mounted) {
+                                                setState(() {});
+                                              }
+                                            },
+                                            icon: Icon(
+                                              CupertinoIcons.clear_circled,
+                                              color: AppColor.white,
+                                            ),
+                                          ),
+                                          appText(
+                                              title:
+                                                  "${Utility.promptController.text.length}/$maxLength",
+                                              color: AppColor.white,
+                                              fontWeight: FontWeight.w400,
+                                              fontSize: 12,
+                                              textAlign: TextAlign.center),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                  decoration: InputDecoration(
+                                    fillColor: AppColor.containerColor,
+                                    filled: true,
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.fromLTRB(20, 15, 0, 15),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: AppColor.borderColor),
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: AppColor.borderColor),
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                    suffixIcon: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // Upload Icon
+                                        InkWell(
+                                          onTap: _pickImage, // ← image picker
+                                          child: Icon(
+                                            Icons.upload_file,
+                                            size: 28,
+                                            color: AppColor.borderColor,
+                                          ),
+                                        ),
+                                        5.toDouble().ws,
+
+                                        // Send Icon
+                                        InkWell(
+                                          onTap: () async {
+                                            if (!getData) {
+                                              sendMessage();
+                                            } else {
+                                              flutterToastCenter("Wait Few Seconds...");
+                                            }
+                                          },
+                                          child: ImageWidget(
+                                            imageUrl: SvgAssetsData.icSendToggle,
+                                            width: 30,
+                                          ),
+                                        ),
+                                        5.toDouble().ws,
+                                      ],
+                                    ),
+                                    hintText: "Type your medication / synthetic vitamin",
+                                    hintMaxLines: 1,
+                                    hintStyle: TextStyle(
+                                      color: AppColor.c949BA5,
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 14,
+                                      fontFamily: 'gelasio',
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ),
                         ],
                       ),
+
                     ],
                   ),
                 ),
@@ -543,6 +630,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         );
       }
     );
+  }
+
+  String _encodeImageToBase64(String filePath) {
+    final bytes = File(filePath).readAsBytesSync();
+    return base64Encode(bytes);
   }
 
   Future<void> sendMessage({int? iId, bool isReload = false}) async {
@@ -619,9 +711,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           );
         }
       }
+
       if (kDebugMode) {
         print('prompt  ${purchaseController.isSubscribe} $prompt');
       }
+
       try {
         final apiKey = remoteConfig.getString('gpt_token');
         final url = Uri.parse('https://api.openai.com/v1/responses');

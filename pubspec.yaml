@@ -66,6 +66,7 @@ dependencies:
   pdf: ^3.11.3
   file_picker: ^10.2.0
   selectable: ^0.5.0
+  image_picker: ^1.1.2
 #  pdf_maker: ^1.1.0
 
 dev_dependencies:
