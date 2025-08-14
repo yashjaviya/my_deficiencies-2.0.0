@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:clipboard/clipboard.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:image_picker/image_picker.dart' as picker;
 import 'package:markdown/markdown.dart' as md;
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' show parse;
@@ -27,6 +26,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:selectable/selectable.dart';
+import 'package:image_picker/image_picker.dart' as picker;
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -59,6 +59,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final controller = Get.put(Controller());
 
   RemoteConfig remoteConfig = Get.put(RemoteConfig());
+
+  final picker.ImagePicker _imagePicker = picker.ImagePicker();
+  picker.XFile? _pickedFile;
 
   @override
   void initState() {
@@ -94,21 +97,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  bool isShowPopup = false;
-
-  String question2 = 'Please provide me where you found this information in a peer reviewed studies and data';
-  // String question2 = 'Provide me all sources, citations, peer-reviewed references by URL';
-  String displayQuestion2 = 'Please provide me where you found this\ninformation in a peer reviewed studies and data';
-  // String displayQuestion2 = 'Provide me all sources, citations,\npeer-reviewed references by URL';
-  String question1 = 'Would you like an easy to read summary version of your report?';
-  String displayQuestion1 = 'Would you like an easy to read summary\nversion of your report?';
-
-  bool isQuestion1 = false;
-  bool isQuestion2 = false;
-
-  final picker.ImagePicker _imagePicker = picker.ImagePicker();
-  picker.XFile? _pickedFile;
-  
   Future<void> _pickImage() async {
     final picker.XFile? image = await _imagePicker.pickImage(
       source: picker.ImageSource.gallery,
@@ -122,6 +110,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       print("No image selected");
     }
   }
+
+  bool isShowPopup = false;
+
+  String question2 = 'Please provide me where you found this information in a peer reviewed studies and data';
+  // String question2 = 'Provide me all sources, citations, peer-reviewed references by URL';
+  String displayQuestion2 = 'Please provide me where you found this\ninformation in a peer reviewed studies and data';
+  // String displayQuestion2 = 'Provide me all sources, citations,\npeer-reviewed references by URL';
+  String question1 = 'Would you like an easy to read summary version of your report?';
+  String displayQuestion1 = 'Would you like an easy to read summary\nversion of your report?';
+
+  bool isQuestion1 = false;
+  bool isQuestion2 = false;
 
   @override
   Widget build(BuildContext context) {
@@ -247,6 +247,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                     getData: getData,
                                     isAnimation: Utility.chatHistoryList[index].isAnimation,
                                     lightDarkController: lightDarkController,
+                                    imagePath: Utility.chatHistoryList[index].imagePath,
                                   );
                                 },
                               ),
@@ -446,11 +447,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         ),
                       ),
                       15.toDouble().hs,
-                      
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ✅ Show image preview above text field
                           if (_pickedFile != null)
                             Stack(
                               children: [
@@ -488,10 +487,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                 ),
                               ],
                             ),
-
-                          8.toDouble().hs, // ← spacing between preview & text field
-
-                          // ✅ Your existing Row (unchanged except for _pickImage)
+                          8.toDouble().hs,
                           Row(
                             children: [
                               Expanded(
@@ -576,9 +572,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        // Upload Icon
                                         InkWell(
-                                          onTap: _pickImage, // ← image picker
+                                          onTap: _pickImage,
                                           child: Icon(
                                             Icons.upload_file,
                                             size: 28,
@@ -586,8 +581,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                           ),
                                         ),
                                         5.toDouble().ws,
-
-                                        // Send Icon
                                         InkWell(
                                           onTap: () async {
                                             if (!getData) {
@@ -619,7 +612,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
-
                     ],
                   ),
                 ),
@@ -632,14 +624,61 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
-  String _encodeImageToBase64(String filePath) {
-    final bytes = File(filePath).readAsBytesSync();
+  String _encodeImageToBase64(String imagePath) {
+    final bytes = File(imagePath).readAsBytesSync();
     return base64Encode(bytes);
+  }
+
+  Future<String?> _extractMedicineFromImage(String imagePath) async {
+    try {
+      final apiKey = remoteConfig.getString('gpt_token');
+      final url = Uri.parse('https://api.openai.com/v1/chat/completions');
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+      };
+
+      final imgBase64 = _encodeImageToBase64(imagePath);
+      final extractionPrompt = "Extract the medicine name, form, active ingredient(s), and any visible dosage information from this image. Return only the extracted text without additional explanation.";
+
+      final body = jsonEncode({
+        'model': 'gpt-4o',
+        'messages': [
+          {
+            'role': 'user',
+            'content': [
+              {"type": "text", "text": extractionPrompt},
+              {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,$imgBase64"}}
+            ],
+          },
+        ],
+        'max_tokens': 200,
+      });
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        var responseData = jsonDecode(response.body);
+        return responseData['choices'][0]['message']['content'];
+      } else {
+        throw Exception('Failed to extract from image: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Extraction error: $e');
+      }
+      return null;
+    }
   }
 
   Future<void> sendMessage({int? iId, bool isReload = false}) async {
     FocusManager.instance.primaryFocus?.unfocus();
-    if (Utility.promptController.text != "" || Utility.promptController.text.isNotEmpty) {
+    if (Utility.promptController.text != "" || _pickedFile != null || Utility.promptController.text.isNotEmpty) {
       scrollController.jumpTo(scrollController.position.maxScrollExtent);
       String question = Utility.promptController.text;
       if(question == question1) {
@@ -655,6 +694,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       }
       Utility.isType = true;
       int id = 0;
+
       try {
         if(Utility.isNewChat){
           id = 1;
@@ -670,22 +710,59 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       Utility.promptController.text = "";
       containerHeight.value = 55.0;
       getData = true;
-      if (!isReload) {
-        // Utility.chatHistoryList.insert(0, ChatListHistoryModel(id: id, message: question, currentDateAndTime: DateTime.now().toString(), isSender: true, isAnimation: false, isGpt4: isSelected));
-        Utility.chatHistoryList.add(ChatListHistoryModel(id: id, message: question, currentDateAndTime: DateTime.now().toString(), isSender: true, isAnimation: false, isGpt4: isSelected));
-        if (Utility.chatHistoryList.length > 1) {
-          DBHelper.updateData(
-            jsonEncode(Utility.chatHistoryList),
-            Utility.isSenderId,
-            DateTime.now().millisecondsSinceEpoch.toString()
-          );
+
+      String? extractedText;
+      if (!isReload && _pickedFile != null) {
+        // Extract wording from image without displaying it
+        extractedText = await _extractMedicineFromImage(_pickedFile!.path);
+
+        if (extractedText != null) {
+          question = extractedText; // Use extracted text as the question for main analysis
+
+          print('extractedText >>> $extractedText');
         } else {
-          Utility.isSenderId = await DBHelper.insert({
-            'title': Utility.chatHistoryList.first.message,
-            'message': jsonEncode(Utility.chatHistoryList),
-            'CurrentDateAndTime': DateTime.now().millisecondsSinceEpoch
-          });
+          question = 'Failed to extract medicine details from image. Please try again.';
         }
+
+        Utility.chatHistoryList.add(ChatListHistoryModel(
+          id: id,
+          message: '', // Don't display extracted text or original question if image-only
+          currentDateAndTime: DateTime.now().toString(),
+          isSender: true,
+          isAnimation: false,
+          isGpt4: isSelected,
+          imagePath: _pickedFile?.path ?? '',
+          imageText: extractedText,
+        ));
+      } else {
+        Utility.chatHistoryList.add(ChatListHistoryModel(
+          id: id,
+          message: question,
+          currentDateAndTime: DateTime.now().toString(),
+          isSender: true,
+          isAnimation: false,
+          isGpt4: isSelected,
+          imagePath: _pickedFile?.path ?? '',
+          imageText: extractedText,
+        ));
+      }
+      
+      if (Utility.chatHistoryList.length > 1) {
+        await DBHelper.updateData(
+          jsonEncode(Utility.chatHistoryList),
+          Utility.isSenderId,
+          DateTime.now().millisecondsSinceEpoch.toString(),
+          _pickedFile?.path ?? '',
+          extractedText
+        );
+      } else {
+        Utility.isSenderId = await DBHelper.insert({
+          'title': Utility.chatHistoryList.first.message,
+          'message': jsonEncode(Utility.chatHistoryList),
+          'CurrentDateAndTime': DateTime.now().millisecondsSinceEpoch,
+          'imagePath': _pickedFile?.path ?? '',
+          'imageText': extractedText,
+        });
       }
 
       if (mounted) {
@@ -693,15 +770,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           scrollController.jumpTo(scrollController.position.maxScrollExtent);
         });
       }
-      List<Map<String, String>> prompt = [];
+      List<Map<String, dynamic>> prompt = [];
 
       for(int i = 0; i < Utility.chatHistoryList.length; i++) {
         bool isQuestions1 = Utility.chatHistoryList[i].message == question1;
         bool isQuestions2 = Utility.chatHistoryList[i].message == question2;
         if (kDebugMode) {
-          print('isQuestions $isQuestions1');
+          // print('isQuestions $isQuestions1');
         }
-        if (Utility.chatHistoryList[i].message != 'ABC') {
+        if (Utility.chatHistoryList[i].message != '' && Utility.chatHistoryList[i].message != 'ABC') {
           prompt.add(
           {
               // 'content': '${Utility.chatHistoryList[i].message} with valid citation',
@@ -710,12 +787,26 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             }
           );
         }
-      }
 
+        if (Utility.chatHistoryList[i].imagePath != null && Utility.chatHistoryList[i].imagePath!.isNotEmpty && Utility.chatHistoryList[i].imageText != null) {
+          String cleanedText = Utility.chatHistoryList[i]
+            .imageText!
+            .replaceAll('\n\n', '')
+            .replaceAll('\n', '')
+            .trim();
+
+          prompt.add(
+          {
+              // 'content': '${Utility.chatHistoryList[i].message} with valid citation',
+              'content': '$cleanedText ${isQuestions1 ? remoteConfig.getString('prompt_view_questions_2_0_0') : isQuestions2 ? remoteConfig.getString('prompt_view_questions2_2_0_0') : remoteConfig.getString(purchaseController.isSubscribe ? 'prompt_view_premium_version_2_0_0' : 'prompt_view_free_version_2_0_0')}, not html format',
+              'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant'
+            }
+          );
+        }
+      }
       if (kDebugMode) {
-        print('prompt  ${purchaseController.isSubscribe} $prompt');
+        // print('prompt  ${purchaseController.isSubscribe} $prompt');
       }
-
       try {
         final apiKey = remoteConfig.getString('gpt_token');
         final url = Uri.parse('https://api.openai.com/v1/responses');
@@ -728,13 +819,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         final body = jsonEncode({
           'model': 'gpt-4.1',
           'instructions': purchaseController.isSubscribe ? remoteConfig.getString('premium_prompt_version_2_0_0') : '${remoteConfig.getString('free_prompt_version_2_0_0')} not html format',
-          'input': jsonEncode(prompt),
+          'input': prompt,
         });
-        
-        if (kDebugMode) {
-          print('purchaseController.isSubscribe ${purchaseController.isSubscribe}');
-          print('purchaseController.isSubscribe body:- $body');
-        }
+
+        print('111111111111 $body');
 
         final response = await http.post(
           url,
@@ -742,24 +830,31 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           body: body,
         );
         if (kDebugMode) {
-          print('response ${response.body}');
+          // print('response ${response.body}');
         }
-        var responseString = jsonDecode(response.body)["output"][0]["content"][0]["text"];
 
-        if (kDebugMode) {
-          print('Response:- $responseString');
-        }
-        if (Utility.isType) {
-          String answer = responseString;
+        print('response >>>> ${jsonDecode(response.body)}');
+
+        if (response.statusCode == 200) {
+          var responseData = jsonDecode(response.body);
+          String answer = responseData['output'][0]['content'][0]['text'] ;
 
           String date = DateTime.now().toString();
           id = Utility.isNewChat ? 1 : Utility.chatHistoryList.last.id;
-          Utility.chatHistoryList.add(ChatListHistoryModel(id: id, message: answer, currentDateAndTime: date, isSender: false, isAnimation: false, isGpt4: isSelected));
+          Utility.chatHistoryList.add(ChatListHistoryModel(
+              id: id,
+              message: answer,
+              currentDateAndTime: date,
+              isSender: false,
+              isAnimation: false,
+              isGpt4: isSelected));
+
           Utility.isNewChat = false;
           getData = false;
-          if(!purchaseController.isSubscribe) {
+          if (!purchaseController.isSubscribe) {
             isShowPopup = true;
           }
+
           Utility.isType = false;
           if (mounted) {
             setState(() {
@@ -769,14 +864,21 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           DBHelper.updateData(
             jsonEncode(Utility.chatHistoryList),
             Utility.isSenderId,
-            DateTime.now().millisecondsSinceEpoch.toString()
+            DateTime.now().millisecondsSinceEpoch.toString(),
+            '',
+            extractedText,
           );
+          setState(() {
+            _pickedFile = null;
+          });
         } else {
           flutterToastCenter('Server Timed Out. Please copy medications, and enter again');
         }
       } catch (e) {
         if (kDebugMode) {
-          print(e);
+          print('-----------------------------------');
+          print('error >>>> $e');
+          print('-----------------------------------');
         }
         // flutterToastCenter('Something is heaped please try again');
         Utility.isNewChat = false;
@@ -785,7 +887,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         DBHelper.updateData(
           jsonEncode(Utility.chatHistoryList),
           Utility.isSenderId,
-          DateTime.now().millisecondsSinceEpoch.toString()
+          DateTime.now().millisecondsSinceEpoch.toString(),
+          '',
+          extractedText,
         );
         getData = false;
         if(!purchaseController.isSubscribe) {
@@ -813,14 +917,22 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     final match = RegExp(r'```[a-zA-Z]*\n([\s\S]*?)```').firstMatch(text);
     return match != null ? match.group(1)?.trim() ?? '' : '';
   }
-
-  Widget messageTile({required int index, required String message, required DateTime time, required bool sendByme, required bool getData, required bool isAnimation, required LightDarkController lightDarkController})  {
-
+  Widget messageTile({
+    required int index,
+    required String message,
+    required DateTime time,
+    required bool sendByme,
+    required bool getData,
+    required bool isAnimation,
+    required LightDarkController lightDarkController,
+    String? imagePath,
+  }) {
     if (isAnimation == true) {
       controller.updateIndexValue(message.length);
     }
-    // print('message.startsWith('') ${message.startsWith('<')}');
+
     bool isGradiant = sendByme;
+
     return Padding(
       padding: EdgeInsets.only(bottom: isGradiant ? 10 : 10.0),
       child: Row(
@@ -836,243 +948,165 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 constraints: BoxConstraints(
                   maxWidth: isGradiant ? MediaQuery.of(context).size.width * 0.90 : Get.width * 0.96,
                 ),
-                decoration: isGradiant ? BoxDecoration(
-                  borderRadius: isGradiant ? const BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15), bottomLeft: Radius.circular(15)) : const BorderRadius.only(topRight: Radius.circular(15), topLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
-                  border: Border.all(color: AppColor.borderColor),
-                  color: isGradiant ? AppColor.messageBg : AppColor.messageLightBg,
-                  // gradient: isGradiant ? LinearGradient(
-                  //   begin: Alignment(-0.99, 0.13),
-                  //   end: Alignment(0.99, -0.13),
-                  //   colors: [
-                  //     Color(0x99262626),
-                  //     Color(0x99262626)
-                  //   ]
-                  // ) : AppColor.gradient2,
-                ) : BoxDecoration(),
+                decoration: isGradiant
+                    ? BoxDecoration(
+                        borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(15),
+                            topRight: Radius.circular(15),
+                            bottomLeft: Radius.circular(15)),
+                        border: Border.all(color: AppColor.borderColor),
+                        color: AppColor.messageBg,
+                      )
+                    : BoxDecoration(),
                 child: (getData && message == "ABC")
                     ? Padding(
-                  padding: const EdgeInsets.all(5.0),
-                  child: Column(
-                    crossAxisAlignment: isGradiant ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                    children: [
-                      // Lottie.asset("assets/json/typing.json", height: 25, width: 40)
-                      Shimmer.fromColors(
-                        baseColor: Colors.grey.withValues(alpha: 0.3),
-                        highlightColor: AppColor.white,
-                        child: appText(
-                          title: 'Analyze Information',
-                          color: AppColor.white
+                        padding: const EdgeInsets.all(5.0),
+                        child: Column(
+                          crossAxisAlignment: isGradiant ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                          children: [
+                            Shimmer.fromColors(
+                              baseColor: Colors.grey.withValues(alpha: 0.3),
+                              highlightColor: AppColor.white,
+                              child: appText(
+                                title: 'Analyze Information',
+                                color: AppColor.white,
+                              ),
+                            )
+                          ],
                         ),
                       )
-                    ],
-                  ),
-                ) : Padding(
-                  padding: EdgeInsets.only(top: 10, bottom: isGradiant ? 10 : 0, left: isGradiant ? 10 : message.startsWith('<') ? 0 : 10, right: isGradiant ? 10 : 0),
-                  child: Column(
-                    crossAxisAlignment: isGradiant ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      isGradiant ? appText(
-                        title: message,
-                        textAlign: TextAlign.start,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 100,
-                        height: 1.5,
-                        fontSize: Utility.fontSize,
-                        color: AppColor.white,
-                      ) : message.startsWith('<') ? HtmlWidget(
-                        message,
-                        textStyle: TextStyle(
-                          color: AppColor.white,
-                          fontFamily: 'gelasio',
-                          decorationColor: AppColor.white
+                    : Padding(
+                        padding: EdgeInsets.only(
+                          top: 10,
+                          bottom: isGradiant ? 10 : 0,
+                          left: isGradiant ? 10 : message.startsWith('<') ? 0 : 10,
+                          right: isGradiant ? 10 : 0,
                         ),
-                        enableCaching: false,
-                        onTapUrl: (url) async {
-                          if (kDebugMode) {
-                            print('onLinkTap $url');
-                          }
-                          return await launchUrl(Uri.parse(url));
-                        },
-                      ) : Selectable(
-                        showSelection: true,
-                        selectWordOnDoubleTap: true,
-                        selectWordOnLongPress: true,
-                        selectionColor: Colors.blue.withValues(alpha: 0.3),
-                        child: MarkdownBody(
-                          data: message,
-                          softLineBreak: true,
-                          extensionSet: md.ExtensionSet(
-                            md.ExtensionSet.gitHubWeb.blockSyntaxes,
-                            <md.InlineSyntax>[
-                              md.EmojiSyntax(),
-                              ...md.ExtensionSet.gitHubWeb.inlineSyntaxes
-                            ],
-                          ),
-                          styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-                            p: TextStyle(
-                                fontSize: 14,
-                                color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            a: TextStyle(
-                                fontSize: 14,
-                                color: AppColor.white,
-                                fontFamily: 'gelasio',
-                                decoration: TextDecoration.underline,
-                                fontWeight: FontWeight.w400,
-                                decorationColor: AppColor.white.withValues(alpha: 0.5)
-                            ),
-                            h1: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            h2: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            h3: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            h4: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            listBullet: TextStyle(
-                              fontSize: 14,
-                              color: AppColor.white, // Bullet color
-                            ),
-                            code: TextStyle(
-                              fontSize: 13,
-                              fontFamily: 'gelasio',
-                              color: AppColor.white,
-                              backgroundColor: Color(0xFFF0F0F0),
-                            ),
-                            tableColumnWidth: IntrinsicColumnWidth(),
-                            tableBody: TextStyle(
-                                color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            tableHead: TextStyle(
-                                color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            strong: TextStyle(
-                                color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            horizontalRuleDecoration: BoxDecoration(
-                              border: Border.all(
-                                color: AppColor.white.withValues(alpha: 0.5),
-                                width: 1,
+                        child: Column(
+                          crossAxisAlignment: isGradiant ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            if (imagePath != null && imagePath.isNotEmpty)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  File(imagePath),
+                                  width: 200,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => appText(
+                                    title: "Failed to load image",
+                                    color: AppColor.white,
+                                  ),
+                                ),
                               ),
-                            ),
-                            blockquote: TextStyle(
+                            if (imagePath != null && imagePath.isNotEmpty) 8.toDouble().hs,
+                            if (isGradiant)
+                              appText(
+                                title: message,
+                                textAlign: TextAlign.start,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 100,
+                                height: 1.5,
+                                fontSize: Utility.fontSize,
                                 color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            checkbox: TextStyle(
-                                color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            del: TextStyle(
-                                color: AppColor.white,
-                                fontFamily: 'gelasio'
-                            ),
-                            em: TextStyle(
-                              color: AppColor.white,
-                              fontFamily: 'gelasio',
-                            ),
-                          ),
-                          shrinkWrap: true,
-                          selectable: false,
-                          onSelectionChanged: (text, selection, cause) {
-                            if (kDebugMode) {
-                              print('onSelectionChanged ${selection}  $text');
-                            }
-                          },
-                          onTapText: () {
-                            // FocusScope.of(context).requestFocus(); // Prevents system menu
-                          },
-                          styleSheetTheme: MarkdownStyleSheetBaseTheme.platform,
-                          onTapLink: (text, href, title) async {
-                            if (kDebugMode) {
-                              print('onLinkTap $href');
-                            }
-                            if (href != null && await canLaunchUrl(Uri.parse(href))) {
-                              await launchUrl(Uri.parse(href));
-                            }
-                          },
+                              )
+                            else if (message.startsWith('<'))
+                              HtmlWidget(
+                                message,
+                                textStyle: TextStyle(
+                                  color: AppColor.white,
+                                  fontFamily: 'gelasio',
+                                  decorationColor: AppColor.white,
+                                ),
+                                enableCaching: false,
+                                onTapUrl: (url) async {
+                                  if (kDebugMode) {
+                                    print('onLinkTap $url');
+                                  }
+                                  return await launchUrl(Uri.parse(url));
+                                },
+                              )
+                            else
+                              Selectable(
+                                showSelection: true,
+                                selectWordOnDoubleTap: true,
+                                selectWordOnLongPress: true,
+                                selectionColor: Colors.blue.withValues(alpha: 0.3),
+                                child: MarkdownBody(
+                                  data: message,
+                                  softLineBreak: true,
+                                  extensionSet: md.ExtensionSet(
+                                    md.ExtensionSet.gitHubWeb.blockSyntaxes,
+                                    <md.InlineSyntax>[
+                                      md.EmojiSyntax(),
+                                      ...md.ExtensionSet.gitHubWeb.inlineSyntaxes
+                                    ],
+                                  ),
+                                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                                    p: TextStyle(
+                                        fontSize: 14, color: AppColor.white, fontFamily: 'gelasio'),
+                                    a: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColor.white,
+                                      fontFamily: 'gelasio',
+                                      decoration: TextDecoration.underline,
+                                      fontWeight: FontWeight.w400,
+                                      decorationColor: AppColor.white.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                  shrinkWrap: true,
+                                  selectable: false,
+                                ),
+                              ),
+                          ],
                         ),
-                      // onSelectionChanged: (value) {
-                      //   print(value);
-                      // },
-                      )/*appText(
-                        title: message,
-                        textAlign: TextAlign.start,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 100,
-                        fontSize: Utility.fontSize,
-                        color: AppColor.white,
-                      ),*/
-                    ],
-                  ),
-                ),
+                      ),
               ),
-              isGradiant ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      FlutterClipboard.copy((message)).then((value) => flutterToastBottomGreen("Your message is copied"));
-                    },
-                    highlightColor: AppColor.white,
-                    icon: Icon(
-                      Icons.copy
-                    ),
-                  ),
-                ],
-              ) : getData ? Container() : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Utility.promptController.text = Utility.chatHistoryList[index - 1].message;
-                      if (index == Utility.chatHistoryList.length - 1) {
-                        Utility.chatHistoryList.removeAt(index);
-                      } else {
-                        Utility.chatHistoryList.removeRange(index, Utility.chatHistoryList.length);
-                      }
-                      sendMessage(isReload: true);
-                    },
-                    icon: Icon(
-                      CupertinoIcons.arrow_clockwise
-                    ),
-                    highlightColor: AppColor.white,
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      FlutterClipboard.copy(htmlToPlainText(message)).then((value) => flutterToastBottomGreen("Your message is copied"));
-                      // FlutterClipboard.copy(message).then((value) => flutterToastBottomGreen("Your message is copied"));
-                    },
-                    highlightColor: AppColor.white,
-                    icon: Icon(
-                      Icons.copy
-                    ),
-                  ),
-                ],
-              )
+              isGradiant
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            FlutterClipboard.copy(message)
+                                .then((value) => flutterToastBottomGreen("Your message is copied"));
+                          },
+                          highlightColor: AppColor.white,
+                          icon: Icon(Icons.copy),
+                        ),
+                      ],
+                    )
+                  : getData
+                      ? Container()
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                Utility.promptController.text = Utility.chatHistoryList[index - 1].message;
+                                if (index == Utility.chatHistoryList.length - 1) {
+                                  Utility.chatHistoryList.removeAt(index);
+                                } else {
+                                  Utility.chatHistoryList.removeRange(index, Utility.chatHistoryList.length);
+                                }
+                                sendMessage(isReload: true);
+                              },
+                              icon: Icon(CupertinoIcons.arrow_clockwise),
+                              highlightColor: AppColor.white,
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                FlutterClipboard.copy(htmlToPlainText(message))
+                                    .then((value) => flutterToastBottomGreen("Your message is copied"));
+                              },
+                              highlightColor: AppColor.white,
+                              icon: Icon(Icons.copy),
+                            ),
+                          ],
+                        ),
             ],
           ),
         ],
