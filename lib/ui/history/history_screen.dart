@@ -35,45 +35,48 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     Widget historyList(int index, Map<String, dynamic> map) {
       ChatGptDbModel chatGptDbModel = ChatGptDbModel.fromJson(map);
-      ChatListHistoryModel chatListHistoryModel = chatGptDbModel.message!.isNotEmpty
-          ? chatGptDbModel.message!.first
-          : ChatListHistoryModel(
-              id: 0, // default int
-              message: '',
-              currentDateAndTime: '',
-              isSender: false, // default bool
-              isAnimation: false, // default bool
-              isGpt4: false, // default bool
-            );
 
+      ChatListHistoryModel chatListHistoryModel =
+          (chatGptDbModel.message != null && chatGptDbModel.message!.isNotEmpty)
+              ? chatGptDbModel.message!.first
+              : ChatListHistoryModel(
+                  id: 0,
+                  message: '',
+                  currentDateAndTime: '',
+                  isSender: false,
+                  isAnimation: false,
+                  isGpt4: false,
+                );
 
       return GestureDetector(
         onTap: () async {
-          Utility.chatHistoryList = chatGptDbModel.message!;
+          Utility.chatHistoryList = chatGptDbModel.message ?? [];
           Utility.isSenderId = chatGptDbModel.id;
           Utility.isNewChat = false;
+
           if (kDebugMode) {
-            print('ChatScreen  ${await DBHelper.getData(3)}');
+            print('ChatScreen ${await DBHelper.getData(chatGptDbModel.id)}');
           }
+
           Get.to(ChatScreen())!.then((value) {
             if (mounted) setState(() {});
           });
         },
         child: Container(
           width: Get.width,
-          margin: EdgeInsets.only(left: 16, right: 16, bottom: 8),
-          padding: EdgeInsets.only(left: 15, right: 5, top: 8, bottom: 8),
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
           decoration: BoxDecoration(
             color: AppColor.btnColor,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Image preview if available
+              // Image preview or placeholder for alignment
               if (chatListHistoryModel.imagePath != null &&
                   chatListHistoryModel.imagePath!.isNotEmpty &&
-                  File(chatListHistoryModel.imagePath!).existsSync())
+                  File(chatListHistoryModel.imagePath!).existsSync()) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.file(
@@ -83,28 +86,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     fit: BoxFit.cover,
                   ),
                 ),
-              if (chatListHistoryModel.imagePath != null &&
-                  chatListHistoryModel.imagePath!.isNotEmpty)
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
+              ],
 
-              // Text part
+              // Text content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     appText(
-                      title: chatGptDbModel.title ?? chatListHistoryModel.message ?? '',
+                      title: chatGptDbModel.title ??
+                          chatListHistoryModel.message ??
+                          '',
                       fontSize: 14,
                       color: AppColor.white,
                       maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 4),
-                    appText(
-                      title: chatListHistoryModel.message ?? '',
-                      fontSize: 12,
-                      color: AppColor.white.withOpacity(0.8),
-                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -116,12 +113,63 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 size: 15,
                 color: AppColor.white,
               ),
+              const SizedBox(width: 5),
+
+              // PullDownButton menu
+              PullDownButton(
+                itemBuilder: (context) => [
+                  PullDownMenuItem(
+                    title: 'Rename Title',
+                    icon: CupertinoIcons.pen,
+                    onTap: () {
+                      showRenameDialog(
+                        context: context,
+                        initialTitle: chatGptDbModel.title ??
+                            chatListHistoryModel.message ??
+                            '',
+                        onRename: (newTitle) {
+                          final safeTitle = newTitle ?? '';
+                          if (kDebugMode) {
+                            print('Renamed to: $safeTitle');
+                          }
+                          DBHelper.updateTitle(
+                            safeTitle,
+                            chatGptDbModel.id,
+                            chatGptDbModel.currentDateAndTime,
+                          );
+                          setState(() {});
+                        },
+                      );
+                    },
+                  ),
+                  PullDownMenuItem(
+                    title: 'PDF Export',
+                    icon: CupertinoIcons.square_arrow_down,
+                    onTap: () {
+                      exportChatToPdf(
+                        chatGptDbModel.message!,
+                        chatGptDbModel.title ??
+                            chatListHistoryModel.message ??
+                            '',
+                      );
+                    },
+                  ),
+                ],
+                buttonBuilder: (context, showMenu) {
+                  return IconButton(
+                    onPressed: showMenu,
+                    icon: Icon(
+                      CupertinoIcons.ellipsis,
+                      color: AppColor.white,
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
       );
     }
-
 
     return GetBuilder<LightDarkController>(
       builder: (lightDarkController) {
