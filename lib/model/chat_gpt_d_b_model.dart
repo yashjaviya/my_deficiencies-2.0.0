@@ -12,28 +12,39 @@ String chatGptDbModelToJson(ChatGptDbModel data) => json.encode(data.toJson());
 
 class ChatGptDbModel {
   int id;
-  List<ChatListHistoryModel> message;
+  List<ChatListHistoryModel>? message;
   String currentDateAndTime;
   String? title;
+  String? imagePath;
 
   ChatGptDbModel({
     required this.id,
     this.title,
-    required this.message,
+    this.message,
     required this.currentDateAndTime,
+    this.imagePath
   });
 
-  factory ChatGptDbModel.fromJson(Map<String, dynamic> json) => ChatGptDbModel(
-    id: json["id"],
-    title: json["title"],
-    message: List<ChatListHistoryModel>.from(jsonDecode(json["message"]).map((x) => ChatListHistoryModel.fromJson(x))),
-    currentDateAndTime: json["CurrentDateAndTime"],
-  );
+  factory ChatGptDbModel.fromJson(Map<String, dynamic> json) {
+    return ChatGptDbModel(
+      id: json["id"] ?? 0,
+      title: json["title"] as String?,
+      message: (json["message"] != null && json["message"].toString().isNotEmpty)
+          ? List<ChatListHistoryModel>.from(
+              jsonDecode(json["message"]).map(
+                (x) => ChatListHistoryModel.fromJson(x),
+              ),
+            )
+          : [],
+      currentDateAndTime: json["CurrentDateAndTime"] ?? '',
+      imagePath: json["imagePath"] as String?,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     "id": id,
     "title": title,
-    "message": List<dynamic>.from(message.map((x) => x.toJson())),
+    "message": List<dynamic>.from(message!.map((x) => x.toJson())),
     "CurrentDateAndTime": currentDateAndTime,
   };
 }

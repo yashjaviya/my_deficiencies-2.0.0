@@ -34,94 +34,94 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
 
     Widget historyList(int index, Map<String, dynamic> map) {
-
       ChatGptDbModel chatGptDbModel = ChatGptDbModel.fromJson(map);
-      ChatListHistoryModel chatListHistoryModel = chatGptDbModel.message[0];
+      ChatListHistoryModel chatListHistoryModel = chatGptDbModel.message!.isNotEmpty
+          ? chatGptDbModel.message!.first
+          : ChatListHistoryModel(
+              id: 0, // default int
+              message: '',
+              currentDateAndTime: '',
+              isSender: false, // default bool
+              isAnimation: false, // default bool
+              isGpt4: false, // default bool
+            );
+
 
       return GestureDetector(
         onTap: () async {
-          Utility.chatHistoryList = chatGptDbModel.message;
+          Utility.chatHistoryList = chatGptDbModel.message!;
           Utility.isSenderId = chatGptDbModel.id;
           Utility.isNewChat = false;
           if (kDebugMode) {
             print('ChatScreen  ${await DBHelper.getData(3)}');
           }
-          Get.to(ChatScreen())!.then(
-            (value) {
-              if (mounted) {
-                setState(() {});
-              }
-            },
-          );
+          Get.to(ChatScreen())!.then((value) {
+            if (mounted) setState(() {});
+          });
         },
         child: Container(
           width: Get.width,
           margin: EdgeInsets.only(left: 16, right: 16, bottom: 8),
-          padding: EdgeInsets.only(left: 15, right: 5),
+          padding: EdgeInsets.only(left: 15, right: 5, top: 8, bottom: 8),
           decoration: BoxDecoration(
             color: AppColor.btnColor,
-            borderRadius: BorderRadius.circular(99),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Image preview if available
+              if (chatListHistoryModel.imagePath != null &&
+                  chatListHistoryModel.imagePath!.isNotEmpty &&
+                  File(chatListHistoryModel.imagePath!).existsSync())
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    File(chatListHistoryModel.imagePath!),
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              if (chatListHistoryModel.imagePath != null &&
+                  chatListHistoryModel.imagePath!.isNotEmpty)
+                SizedBox(width: 10),
+
+              // Text part
               Expanded(
-                child: appText(
-                  title: chatGptDbModel.title ?? chatListHistoryModel.message,
-                  fontSize: 14,
-                  color: AppColor.white,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    appText(
+                      title: chatGptDbModel.title ?? chatListHistoryModel.message ?? '',
+                      fontSize: 14,
+                      color: AppColor.white,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4),
+                    appText(
+                      title: chatListHistoryModel.message ?? '',
+                      fontSize: 12,
+                      color: AppColor.white.withOpacity(0.8),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
+
               Icon(
                 CupertinoIcons.right_chevron,
                 size: 15,
                 color: AppColor.white,
               ),
-              5.toDouble().ws,
-              PullDownButton(
-                itemBuilder: (context) => [
-                  PullDownMenuItem(
-                    title: 'Rename Title',
-                    icon: CupertinoIcons.pen,
-                    onTap: () {
-                      showRenameDialog(
-                        context: context,
-                        initialTitle: chatGptDbModel.title ?? chatListHistoryModel.message,
-                        onRename: (newTitle) {
-                          if (kDebugMode) {
-                            print('Renamed to: $newTitle');
-                          }
-                          DBHelper.updateTitle(newTitle, chatGptDbModel.id, chatGptDbModel.currentDateAndTime);
-                          setState(() {});
-                        },
-                      );
-                    },
-                  ),
-                  PullDownMenuItem(
-                    title: 'PDF Export',
-                    icon: CupertinoIcons.square_arrow_down,
-                    onTap: () {
-                      exportChatToPdf(chatGptDbModel.message, chatGptDbModel.title ?? chatListHistoryModel.message);
-                      // exportChatToPDF(chatGptDbModel);
-                    },
-                  ),
-                ],
-                buttonBuilder: (context, showMenu) {
-                  return IconButton(
-                    onPressed: showMenu,
-                    icon: Icon(
-                      CupertinoIcons.ellipsis,
-                      color: AppColor.white,
-                    ),
-                  );
-                }
-              )
             ],
-          )
+          ),
         ),
       );
     }
+
 
     return GetBuilder<LightDarkController>(
       builder: (lightDarkController) {
@@ -345,8 +345,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
               pw.Text(role == 'user' ? '👤 User:' : '🤖 Assistant:', style: style.copyWith(fontWeight: pw.FontWeight.bold, fontSize: 18)),
             );
             role == 'user' ? widgets.add(
-              pw.Text(content, style: style.copyWith(fontWeight: pw.FontWeight.bold, fontSize: 15)),
-            ) : widgets.addAll(convertMarkdownToWidgets(content, style));
+              pw.Text(content!, style: style.copyWith(fontWeight: pw.FontWeight.bold, fontSize: 15)),
+            ) : widgets.addAll(convertMarkdownToWidgets(content!, style));
             widgets.add(pw.SizedBox(height: 12));
           }
 

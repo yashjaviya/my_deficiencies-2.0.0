@@ -241,7 +241,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                     lightDarkController: lightDarkController,
                                   ) : messageTile(
                                     index: index,
-                                    message: Utility.chatHistoryList[index].message,
+                                    message: Utility.chatHistoryList[index].message ?? '',
                                     time: DateTime.parse(Utility.chatHistoryList[index].currentDateAndTime),
                                     sendByme: Utility.chatHistoryList[index].isSender,
                                     getData: getData,
@@ -341,7 +341,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                               Get.to(PremiumScreen())!.then(
                                                     (value) {
                                                   if(purchaseController.isSubscribe) {
-                                                    Utility.promptController.text = Utility.chatHistoryList[Utility.chatHistoryList.length - 2].message;
+                                                    Utility.promptController.text = Utility.chatHistoryList[Utility.chatHistoryList.length - 2].message!;
                                                     sendMessage(iId: Utility.chatHistoryList[Utility.chatHistoryList.length - 2].id);
                                                   }
                                                 },
@@ -385,10 +385,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           padding: const EdgeInsets.only(top: 10.0),
                           child: InkWell(
                             onTap: () {
-                              String message = Utility.chatHistoryList[Utility.chatHistoryList.length - 1].message;
+                              String? message = Utility.chatHistoryList[Utility.chatHistoryList.length - 1].message;
 
                               Utility.chatHistoryList[Utility.chatHistoryList.length - 1].isAnimation = false;
-                              Utility.chatHistoryList[Utility.chatHistoryList.length - 1].message = message.substring(0, message.length - controller.count.value);
+                              Utility.chatHistoryList[Utility.chatHistoryList.length - 1].message = message!.substring(0, message.length - controller.count.value);
 
                               addChatListHistory.updateChatListHistory(Utility.chatHistoryList[Utility.chatHistoryList.length - 1].id, message: message.substring(0, message.length - controller.count.value), currentDateAndTime: Utility.chatHistoryList[Utility.chatHistoryList.length - 1].currentDateAndTime, isSender: Utility.chatHistoryList[Utility.chatHistoryList.length - 1].isSender);
 
@@ -717,7 +717,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         extractedText = await _extractMedicineFromImage(_pickedFile!.path);
 
         if (extractedText != null) {
-          question = extractedText; // Use extracted text as the question for main analysis
+          // question = extractedText; // Use extracted text as the question for main analysis
 
           print('extractedText >>> $extractedText');
         } else {
@@ -726,7 +726,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
         Utility.chatHistoryList.add(ChatListHistoryModel(
           id: id,
-          message: '', // Don't display extracted text or original question if image-only
+          message: question, // Don't display extracted text or original question if image-only
           currentDateAndTime: DateTime.now().toString(),
           isSender: true,
           isAnimation: false,
@@ -932,6 +932,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
 
     bool isGradiant = sendByme;
+    print('iaGradiannt >>>> $isGradiant');
+    print('message >>> $message');
+    print('imagePath >>> $imagePath');
 
     return Padding(
       padding: EdgeInsets.only(bottom: isGradiant ? 10 : 10.0),
@@ -1086,7 +1089,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           children: [
                             IconButton(
                               onPressed: () {
-                                Utility.promptController.text = Utility.chatHistoryList[index - 1].message;
+                                Utility.promptController.text = Utility.chatHistoryList[index - 1].message!;
                                 if (index == Utility.chatHistoryList.length - 1) {
                                   Utility.chatHistoryList.removeAt(index);
                                 } else {

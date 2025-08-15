@@ -134,7 +134,7 @@ class DBHelper {
 
 class ChatListHistoryModel {
   int id;
-  String message;
+  String? message;
   String currentDateAndTime;
   bool isSender;
   bool isAnimation;
@@ -144,7 +144,7 @@ class ChatListHistoryModel {
 
   ChatListHistoryModel({
     required this.id,
-    required this.message,
+    this.message,
     required this.currentDateAndTime,
     required this.isSender,
     required this.isAnimation,
@@ -183,7 +183,7 @@ class ChatListHistoryModel {
 class AddChatListHistory {
   Future<void> saveChatListHistory({
     required int id,
-    required String message,
+    String? message,
     required String currentDateAndTime,
     required bool isSender,
     required bool isGpt4,
@@ -194,7 +194,7 @@ class AddChatListHistory {
     await DBHelper.insert({
       'id': id,
       'title': title ?? '',
-      'message': message,
+      'message': message ?? '',
       'currentDateAndTime': currentDateAndTime,
       'isSender': isSender ? 1 : 0,
       'isAnimation': 0,
@@ -215,13 +215,13 @@ class AddChatListHistory {
 
   Future<void> updateChatListHistory(
     int id, {
-    required String message,
+    String? message,
     required String currentDateAndTime,
     required bool isSender,
     String? imagePath,
     String? imageText,
   }) async {
-    await DBHelper.updateData(message, id, currentDateAndTime, imagePath, imageText);
+    await DBHelper.updateData(message!, id, currentDateAndTime, imagePath, imageText);
   }
 
   Future<void> deleteChatListHistory(int id) async {

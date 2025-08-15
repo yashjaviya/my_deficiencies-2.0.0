@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Widget historyList(int index, Map<String, dynamic> map) {
 
       ChatGptDbModel chatGptDbModel = ChatGptDbModel.fromJson(map);
-      ChatListHistoryModel chatListHistoryModel = chatGptDbModel.message[0];
+      ChatListHistoryModel chatListHistoryModel = chatGptDbModel.message![0];
 
       var dt = DateTime.fromMillisecondsSinceEpoch(DateTime.fromMillisecondsSinceEpoch(int.tryParse(chatListHistoryModel.currentDateAndTime) ?? DateTime.now().millisecondsSinceEpoch).millisecondsSinceEpoch);
       var date = DateFormat('EEE, dd MMM yyyy').format(dt);
@@ -45,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           GestureDetector(
             onTap: () async {
-              Utility.chatHistoryList = chatGptDbModel.message;
+              Utility.chatHistoryList = chatGptDbModel.message!;
               Utility.isSenderId = chatGptDbModel.id;
               Utility.isNewChat = false;
               if (kDebugMode) {
