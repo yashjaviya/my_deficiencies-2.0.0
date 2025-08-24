@@ -63,5 +63,7 @@
     <string>Allows tracking to personalize medication reminders and improve your experience.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Store Your PDF to you storage please allow this permission</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
 </dict>
 </plist>

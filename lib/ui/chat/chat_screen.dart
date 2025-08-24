@@ -21,6 +21,7 @@ import 'package:my_deficiencies/firebase/remote_config.dart';
 import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
 import 'package:my_deficiencies/ui/premium/premium_screen.dart';
+import 'package:my_deficiencies/ui_widget/banner_widget.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -853,6 +854,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               SizedBox(height: Get.mediaQuery.padding.bottom),
             ],
           ),
+          bottomNavigationBar: const BannerAdWidget(),
         );
       },
     );
