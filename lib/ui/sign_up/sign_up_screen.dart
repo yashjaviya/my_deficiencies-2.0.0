@@ -23,9 +23,7 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-
   ProgressDialog progressDialog = ProgressDialog();
-
 
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -42,11 +40,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
     progressDialog.show();
     try {
-      if(validateEmail(emailController.text) != null) {
+      if (validateEmail(emailController.text) != null) {
         Fluttertoast.showToast(msg: "Please Enter Valid Email Address");
         return;
       }
-      if(validatePassword(passwordController.text) != null) {
+      if (validatePassword(passwordController.text) != null) {
         Fluttertoast.showToast(msg: "Please Enter Valid Password");
         return;
       }
@@ -113,8 +111,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         accessToken: appleCredential.authorizationCode,
       );
 
-      final UserCredential userCredential =
-      await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      final UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithCredential(oauthCredential);
 
       // Optional: Update display name
       if (appleCredential.givenName != null) {
@@ -128,7 +126,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         name: '/DialogWidgetSuccessfully',
         DialogWidget(
           onTap: () {
-            if (widget.previousRoute != '/PremiumScreen' && widget.previousRoute != '/SettingScreen') {
+            if (widget.previousRoute != '/PremiumScreen' &&
+                widget.previousRoute != '/SettingScreen') {
               Get.offAll(HomeScreen());
             } else {
               Get.back();
@@ -137,9 +136,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
           },
           imageUrl: ImageData.icSuccess,
           title: 'Successfully\nLogin',
-          description: 'Congratulations, your account registration successfully',
+          description:
+              'Congratulations, your account registration successfully',
           btnText: 'Home',
-        )
+        ),
       );
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
@@ -177,23 +177,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
       loginFail(message);
     } catch (e) {
-      Fluttertoast.showToast(msg: kDebugMode ? 'Apple Sign-In Failed: $e' : 'Login Fail try again');
+      Fluttertoast.showToast(
+        msg: kDebugMode ? 'Apple Sign-In Failed: $e' : 'Login Fail try again',
+      );
     }
   }
 
   loginFail(String message) {
     Get.dialog(
-        name: '/DialogWidgetFail',
-        DialogWidget(
-          onTap: () {
-
-          },
-          imageUrl: ImageData.icFail,
-          title: 'Login Fail',
-          description: message,
-          // description: 'Your entered data is wrong or you cn',
-          btnText: 'Re Enter',
-        )
+      name: '/DialogWidgetFail',
+      DialogWidget(
+        onTap: () {},
+        imageUrl: ImageData.icFail,
+        title: 'Login Fail',
+        description: message,
+        // description: 'Your entered data is wrong or you cn',
+        btnText: 'Re Enter',
+      ),
     );
   }
 
@@ -219,7 +219,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // WidgetsBindingObserver().
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -234,10 +233,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             onPressed: () {
               Get.back();
             },
-            icon: Icon(
-              CupertinoIcons.back,
-              color: AppColor.white,
-            ),
+            icon: Icon(CupertinoIcons.back, color: AppColor.white),
           ),
         ),
       ),
@@ -272,7 +268,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       width: 38,
                       height: 41,
                       margin: EdgeInsets.only(left: 5),
-                      padding: EdgeInsets.symmetric(horizontal: 12.5, vertical: 9),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.5,
+                        vertical: 9,
+                      ),
                       child: Container(
                         padding: EdgeInsets.all(3),
                         child: ImageWidget(
@@ -281,7 +280,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           height: 23,
                         ),
                       ),
-                    )
+                    ),
                   ),
                   25.toDouble().hs,
                   appTextField(
@@ -297,7 +296,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         // width: 38,
                         // height: 41,
                       ),
-                    )
+                    ),
                   ),
                   25.toDouble().hs,
                   appTextField(
@@ -324,7 +323,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       icon: Container(
                         padding: EdgeInsets.all(10),
                         child: ImageWidget(
-                          imageUrl: !isShowPassword ? SvgAssetsData.icEye : SvgAssetsData.icEyeClose,
+                          imageUrl:
+                              !isShowPassword
+                                  ? SvgAssetsData.icEye
+                                  : SvgAssetsData.icEyeClose,
                           // width: 18,
                           // height: 21,
                         ),
@@ -343,14 +345,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       decoration: BoxDecoration(
                         color: AppColor.btnColor,
                         borderRadius: BorderRadius.circular(99),
-                        border: Border.all(color: AppColor.white)
+                        border: Border.all(color: AppColor.white),
                       ),
                       alignment: Alignment.center,
                       child: appText(
                         title: 'Sign In',
                         color: AppColor.white,
                         fontWeight: FontWeight.w700,
-                        fontSize: 20
+                        fontSize: 20,
                       ),
                     ),
                   ),
@@ -375,9 +377,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: AppColor.white.withValues(alpha: 0.5),
-                          width: 1
+                          width: 1,
                         ),
-                        borderRadius: BorderRadius.circular(16)
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       alignment: Alignment.center,
                       child: Stack(
@@ -386,16 +388,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         children: [
                           Positioned(
                             left: 20,
-                            child: ImageWidget(
-                              imageUrl: SvgAssetsData.icApple,
-                            ),
+                            child: ImageWidget(imageUrl: SvgAssetsData.icApple),
                           ),
                           Center(
                             child: appText(
                               title: 'Sign With Apple',
                               color: AppColor.white,
                               fontWeight: FontWeight.w500,
-                              fontSize: 16
+                              fontSize: 16,
                             ),
                           ),
                         ],
@@ -406,7 +406,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
     );

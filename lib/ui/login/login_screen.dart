@@ -43,12 +43,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void login() async {
     if (_formKey.currentState!.validate()) {
       try {
-
-        if(validateEmail(_emailController.text) != null) {
+        if (validateEmail(_emailController.text) != null) {
           Fluttertoast.showToast(msg: "Please Enter Valid Email Address");
           return;
         }
-        if(validatePassword(_passwordController.text) != null) {
+        if (validatePassword(_passwordController.text) != null) {
           Fluttertoast.showToast(msg: "Please Enter Valid Password");
           return;
         }
@@ -63,7 +62,8 @@ class _LoginScreenState extends State<LoginScreen> {
           name: '/DialogWidgetSuccessfully',
           DialogWidget(
             onTap: () {
-              if (previousRoute != '/PremiumScreen' && previousRoute != '/SettingScreen') {
+              if (previousRoute != '/PremiumScreen' &&
+                  previousRoute != '/SettingScreen') {
                 Get.offAll(HomeScreen());
               } else {
                 Get.back();
@@ -71,9 +71,10 @@ class _LoginScreenState extends State<LoginScreen> {
             },
             imageUrl: ImageData.icSuccess,
             title: 'Successfully\nLogin',
-            description: 'Congratulations, your account registration successfully',
+            description:
+                'Congratulations, your account registration successfully',
             btnText: 'Continue',
-          )
+          ),
         );
         // Navigate to Home or Dashboard
       } on FirebaseAuthException catch (e) {
@@ -127,8 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
         accessToken: appleCredential.authorizationCode,
       );
 
-      final UserCredential userCredential =
-      await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      final UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithCredential(oauthCredential);
 
       // Optional: Update display name
       if (appleCredential.givenName != null) {
@@ -142,7 +143,8 @@ class _LoginScreenState extends State<LoginScreen> {
         name: '/DialogWidgetSuccessfully',
         DialogWidget(
           onTap: () {
-            if (previousRoute != '/PremiumScreen' && previousRoute != '/SettingScreen') {
+            if (previousRoute != '/PremiumScreen' &&
+                previousRoute != '/SettingScreen') {
               Get.offAll(HomeScreen());
             } else {
               Get.back();
@@ -150,9 +152,10 @@ class _LoginScreenState extends State<LoginScreen> {
           },
           imageUrl: ImageData.icSuccess,
           title: 'Successfully\nLogin',
-          description: 'Congratulations, your account registration successfully',
+          description:
+              'Congratulations, your account registration successfully',
           btnText: 'Continue',
-        )
+        ),
       );
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
@@ -192,7 +195,9 @@ class _LoginScreenState extends State<LoginScreen> {
       loginFail(message);
     } catch (e) {
       progressDialog.close();
-      Fluttertoast.showToast(msg: kDebugMode ? 'Apple Sign-In Failed: $e' : 'Login Fail try again');
+      Fluttertoast.showToast(
+        msg: kDebugMode ? 'Apple Sign-In Failed: $e' : 'Login Fail try again',
+      );
     }
   }
 
@@ -200,15 +205,13 @@ class _LoginScreenState extends State<LoginScreen> {
     Get.dialog(
       name: '/DialogWidgetFail',
       DialogWidget(
-        onTap: () {
-
-        },
+        onTap: () {},
         imageUrl: ImageData.icFail,
         title: 'Login Fail',
         description: message,
         // description: 'Your entered data is wrong or you cn',
         btnText: 'Re Enter',
-      )
+      ),
     );
   }
 
@@ -229,10 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColor.bgColor,
-      appBar: AppBar(
-        backgroundColor: AppColor.bgColor,
-        toolbarHeight: 0,
-      ),
+      appBar: AppBar(backgroundColor: AppColor.bgColor, toolbarHeight: 0),
       body: Form(
         key: _formKey,
         child: Column(
@@ -272,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // width: 38,
                   // height: 41,
                 ),
-              )
+              ),
             ),
             25.toDouble().hs,
             appTextField(
@@ -300,7 +300,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 icon: Container(
                   padding: EdgeInsets.all(10),
                   child: ImageWidget(
-                    imageUrl: !isShowPassword ? SvgAssetsData.icEye : SvgAssetsData.icEyeClose,
+                    imageUrl:
+                        !isShowPassword
+                            ? SvgAssetsData.icEye
+                            : SvgAssetsData.icEyeClose,
                     // width: 18,
                     // height: 21,
                   ),
@@ -319,14 +322,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: BoxDecoration(
                   color: AppColor.btnColor,
                   borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: AppColor.white)
+                  border: Border.all(color: AppColor.white),
                 ),
                 alignment: Alignment.center,
                 child: appText(
                   title: 'Login',
                   color: AppColor.white,
                   fontWeight: FontWeight.w700,
-                  fontSize: 20
+                  fontSize: 20,
                 ),
               ),
             ),
@@ -342,9 +345,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: AppColor.white.withValues(alpha: 0.5),
-                    width: 1
+                    width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(16)
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 alignment: Alignment.center,
                 child: Stack(
@@ -353,16 +356,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Positioned(
                       left: 20,
-                      child: ImageWidget(
-                        imageUrl: SvgAssetsData.icApple,
-                      ),
+                      child: ImageWidget(imageUrl: SvgAssetsData.icApple),
                     ),
                     Center(
                       child: appText(
                         title: 'Sign With Apple',
                         color: AppColor.white,
                         fontWeight: FontWeight.w500,
-                        fontSize: 16
+                        fontSize: 16,
                       ),
                     ),
                   ],
@@ -379,7 +380,7 @@ class _LoginScreenState extends State<LoginScreen> {
             20.toDouble().hs,
             GestureDetector(
               onTap: () {
-                Get.to(SignUpScreen(previousRoute: previousRoute,));
+                Get.to(SignUpScreen(previousRoute: previousRoute));
               },
               child: Wrap(
                 children: [
@@ -399,7 +400,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             Visibility(
-              visible: (previousRoute != '/PremiumScreen' && previousRoute != '/SettingScreen'),
+              visible:
+                  (previousRoute != '/PremiumScreen' &&
+                      previousRoute != '/SettingScreen'),
               child: GestureDetector(
                 onTap: () {
                   Get.offAll(HomeScreen());
@@ -414,7 +417,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
