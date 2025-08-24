@@ -67,6 +67,8 @@ dependencies:
   file_picker: ^10.2.0
   selectable: ^0.5.0
   image_picker: ^1.1.2
+  cloud_firestore: ^5.6.12
+  flutter_gpt_tokenizer: ^0.1.1
 #  pdf_maker: ^1.1.0
 
 dev_dependencies:
