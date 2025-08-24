@@ -28,6 +28,27 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:selectable/selectable.dart';
 import 'package:image_picker/image_picker.dart' as picker;
+import 'package:flutter_gpt_tokenizer/flutter_gpt_tokenizer.dart';
+
+class TokenizerService {
+  // ✅ Only one instance
+  static final TokenizerService _instance = TokenizerService._internal();
+  factory TokenizerService() => _instance;
+
+  late final Tokenizer _tokenizer;
+
+  TokenizerService._internal() {
+    _tokenizer = Tokenizer();
+  }
+
+  Future<int> countTokens(String text, {String model = "gpt-4"}) async {
+    return await _tokenizer.count(text, modelName: model);
+  }
+
+  Future<List<int>> encode(String text, {String model = "gpt-4"}) async {
+    return await _tokenizer.encode(text, modelName: model);
+  }
+}
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -59,6 +80,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final mySoundController = Get.put(MySoundController());
   final purchaseController = Get.put(PurchaseController());
   final controller = Get.put(Controller());
+
+  double remainingToken = 2500000;
+  num inputToken = 0;
+  num outputToken = 0;
 
   RemoteConfig remoteConfig = Get.put(RemoteConfig());
 
@@ -915,6 +940,13 @@ If any information is not visible or unclear in the image, mark it as "Not found
         final content =
             responseData['choices'][0]['message']['content'] as String;
 
+        var usagesToken = responseData['usage'];
+        inputToken += usagesToken['input_tokens'];
+        outputToken += usagesToken['output_tokens'];
+
+        print('inputToken --- 1 --- $inputToken');
+        print('outputToken --- 1 --- $outputToken');
+
         final lines = content.split('\n');
         final Map<String, String> fields = {};
 
@@ -962,6 +994,11 @@ If any information is not visible or unclear in the image, mark it as "Not found
   }
 
   Future<void> sendMessage({int? iId, bool isReload = false}) async {
+    if (remainingToken == 0) {
+      flutterToastCenter("No tokens available. Renew your subscription to continue.");
+      return;
+    }
+
     FocusManager.instance.primaryFocus?.unfocus();
     if (Utility.promptController.text != "" ||
         _pickedFile != null ||
@@ -1007,6 +1044,11 @@ If any information is not visible or unclear in the image, mark it as "Not found
       );
 
       if (!isReload && _pickedFile != null) {
+        if (remainingToken <= 10000) {
+          flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
+          return;
+        }
+
         // Extract wording from image
         extractedText = await _extractMedicineFromImage(_pickedFile!.path);
 
@@ -1242,7 +1284,17 @@ If any information is not visible or unclear in the image, mark it as "Not found
           'input': prompt,
         });
 
-        print('111111111111 $body');
+        final count = await TokenizerService().countTokens(jsonEncode(body), model: "gpt-4");
+        print("Token count: $count");
+
+        if (remainingToken <= count) {
+          flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
+          return;
+        }
+
+        // body['max_tokens'] = remainingToken - count;
+
+        // print('111111111111 $body');
 
         final response = await http.post(url, headers: headers, body: body);
         if (kDebugMode) {
@@ -1253,6 +1305,27 @@ If any information is not visible or unclear in the image, mark it as "Not found
 
         if (response.statusCode == 200) {
           var responseData = jsonDecode(response.body);
+
+          double calcCost(int inputTokens, int outputTokens) {
+            // gpt-4.1 rates
+            const double inputRate = 2.0 / 1000000;  // $2 per 1M
+            const double outputRate = 8.0 / 1000000; // $8 per 1M
+
+            return (inputTokens * inputRate) + (outputTokens * outputRate);
+          }
+
+          final usages = responseData['usage'];
+
+          final cost = calcCost(usages['input_tokens'], usages['output_tokens']);
+          print("This request cost: \$${cost.toStringAsFixed(4)}");
+          print('usages ------- ${responseData['usage']}');
+
+          final remainingMoney = 4.49 - cost;
+          print('remainingMoney ----- $remainingMoney');
+
+          remainingToken = ((remainingMoney * 2500000) / 4.99).toDouble();
+          print('remainingToken ------ $remainingToken');
+
           String answer = responseData['output'][0]['content'][0]['text'];
 
           String date = DateTime.now().toString();
