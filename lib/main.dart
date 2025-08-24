@@ -9,7 +9,6 @@ import 'package:my_deficiencies/ui/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -27,7 +26,6 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
@@ -37,12 +35,23 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.blue,
-          primary: Colors.blue
+          primary: Colors.blue,
         ),
         primaryColor: Colors.blue,
         useMaterial3: true,
       ),
+
       themeMode: ThemeMode.system,
+
+      // 👇 This is the fix: it overrides system font scaling
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(textScaleFactor: 1.0), // Lock font scaling
+          child: child ?? const SizedBox(),
+        );
+      },
+
       home: SplashScreen(),
     );
   }
