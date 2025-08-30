@@ -19,10 +19,12 @@ import 'package:my_deficiencies/data_base/chat_list_data_base.dart';
 import 'package:my_deficiencies/data_base/prompt_data_base.dart' hide DBHelper;
 import 'package:my_deficiencies/firebase/remote_config.dart';
 import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
+import 'package:my_deficiencies/model/user_model.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
 import 'package:my_deficiencies/ui/premium/premium_screen.dart';
 import 'package:my_deficiencies/ui_widget/banner_widget.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
@@ -81,6 +83,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final purchaseController = Get.put(PurchaseController());
   final controller = Get.put(Controller());
 
+  UserModel? currentUser;
+
+  bool isSubscribe = false;
+  bool isReferenceUser = false;
+  double subscriptionPlan = 4.99;
   double remainingToken = 2500000;
   num inputToken = 0;
   num outputToken = 0;
@@ -115,6 +122,31 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       scrollController.jumpTo(scrollController.position.maxScrollExtent);
     });
+
+    // ✅ Fetch user data from SharedPreferences
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? userJson = prefs.getString("userData");
+
+    if (userJson != null) {
+      final user = UserModel.fromJson(userJson);
+
+      // ✅ Now you can use user object
+      print("Fetched User: ${user.email}, Token: ${user.remainingToken}");
+
+      setState(() {
+        isSubscribe = user.isSubscribe ?? false;
+        remainingToken = user.remainingToken;
+        subscriptionPlan = user.subscriptionPlan ?? 0;
+        isReferenceUser = user.isReferenceUser ?? false;
+        currentUser = user; // define `UserModel? currentUser;` in your State class
+      });
+    } else {
+      print("No user data found in SharedPreferences");
+    }
   }
 
   @override
@@ -935,14 +967,19 @@ If any information is not visible or unclear in the image, mark it as "Not found
 
       final response = await http.post(url, headers: headers, body: body);
 
+      // print('response body ----- ${jsonDecode(response.body)}');
+
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
         final content =
             responseData['choices'][0]['message']['content'] as String;
 
+        // print('content ----- $content');
+
+        // print('usage ----- ${responseData['usage']}');
         var usagesToken = responseData['usage'];
-        inputToken += usagesToken['input_tokens'];
-        outputToken += usagesToken['output_tokens'];
+        inputToken += usagesToken['prompt_tokens'];
+        outputToken += usagesToken['completion_tokens'];
 
         print('inputToken --- 1 --- $inputToken');
         print('outputToken --- 1 --- $outputToken');
@@ -962,6 +999,8 @@ If any information is not visible or unclear in the image, mark it as "Not found
             }
           }
         }
+
+        print('felds -----$fields');
 
         return fields.isNotEmpty ? fields : null;
       } else {
@@ -994,7 +1033,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
   }
 
   Future<void> sendMessage({int? iId, bool isReload = false}) async {
-    if (remainingToken == 0) {
+    if (remainingToken == 0 && !isReferenceUser) {
       flutterToastCenter("No tokens available. Renew your subscription to continue.");
       return;
     }
@@ -1037,14 +1076,14 @@ If any information is not visible or unclear in the image, mark it as "Not found
 
       Map<String, String>? extractedText;
 
-      print('isReload >>>> ${isReload}');
-      print('_pickedFile >>>> ${_pickedFile}');
-      print(
-        'is that condition is true........ >>>> ${!isReload && _pickedFile != null}',
-      );
+      // print('isReload >>>> ${isReload}');
+      // print('_pickedFile >>>> ${_pickedFile}');
+      // print(
+        // 'is that condition is true........ >>>> ${!isReload && _pickedFile != null}',
+      // );
 
       if (!isReload && _pickedFile != null) {
-        if (remainingToken <= 10000) {
+        if (remainingToken <= 10000  && !isReferenceUser) {
           flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
           return;
         }
@@ -1052,14 +1091,22 @@ If any information is not visible or unclear in the image, mark it as "Not found
         // Extract wording from image
         extractedText = await _extractMedicineFromImage(_pickedFile!.path);
 
-        // print('extractedText >>>>> ${extractedText['Medicine']}');
+        print('extractedText >>>>> ${extractedText}');
 
-        if (extractedText != null &&
-            extractedText.containsKey('Medicine') &&
-            extractedText['Medicine'] != null &&
-            extractedText['Medicine']!.trim().isNotEmpty) {
+        if (extractedText != null
+            // extractedText.containsKey('Medicine') &&
+            // extractedText['Medicine'] != null &&
+            // extractedText['Medicine']!.trim().isNotEmpty
+          ) {
           // Only show and edit 'Medicine' field
-          String initialMedicineName = extractedText['Medicine'] ?? '';
+          String? initialMedicineName = '';
+
+          if (extractedText['Medicine'] != null) {
+            initialMedicineName = extractedText['Medicine'].toString();
+          } else if (extractedText['Active Ingredients'] != null) {
+            initialMedicineName = extractedText['Active Ingredients'];
+          }
+
           TextEditingController _medicineController = TextEditingController(
             text: initialMedicineName,
           );
@@ -1231,15 +1278,18 @@ If any information is not visible or unclear in the image, mark it as "Not found
         if (Utility.chatHistoryList[i].message != '' &&
             Utility.chatHistoryList[i].message != 'ABC') {
           prompt.add({
-            // 'content': '${Utility.chatHistoryList[i].message} with valid citation',
             'content':
-                '${Utility.chatHistoryList[i].message} ${isQuestions1
+                '${Utility.chatHistoryList[i].message} '
+                '${isQuestions1
                     ? remoteConfig.getString('prompt_view_questions_2_0_0')
                     : isQuestions2
-                    ? remoteConfig.getString('prompt_view_questions2_2_0_0')
-                    : remoteConfig.getString(purchaseController.isSubscribe ? 'prompt_view_premium_version_2_0_0' : 'prompt_view_free_version_2_0_0')}, not html format',
+                        ? remoteConfig.getString('prompt_view_questions2_2_0_0')
+                        : (purchaseController.isSubscribe || isReferenceUser
+                            ? remoteConfig.getString('prompt_view_premium_version_2_0_0')
+                            : remoteConfig.getString('prompt_view_free_version_2_0_0'))}, not html format',
             'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant',
           });
+
         }
 
         if (Utility.chatHistoryList[i].imagePath != null &&
@@ -1258,7 +1308,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
                     ? remoteConfig.getString('prompt_view_questions_2_0_0')
                     : isQuestions2
                     ? remoteConfig.getString('prompt_view_questions2_2_0_0')
-                    : remoteConfig.getString(purchaseController.isSubscribe ? 'prompt_view_premium_version_2_0_0' : 'prompt_view_free_version_2_0_0')}, not html format',
+                    : (purchaseController.isSubscribe || isReferenceUser
+                        ? remoteConfig.getString('prompt_view_premium_version_2_0_0')
+                        : remoteConfig.getString('prompt_view_free_version_2_0_0'))}, not html format',
             'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant',
           });
         }
@@ -1278,7 +1330,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
         final body = jsonEncode({
           'model': 'gpt-4.1',
           'instructions':
-              purchaseController.isSubscribe
+              purchaseController.isSubscribe || isReferenceUser
                   ? remoteConfig.getString('premium_prompt_version_2_0_0')
                   : '${remoteConfig.getString('free_prompt_version_2_0_0')} not html format',
           'input': prompt,
@@ -1287,7 +1339,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
         final count = await TokenizerService().countTokens(jsonEncode(body), model: "gpt-4");
         print("Token count: $count");
 
-        if (remainingToken <= count) {
+        if (remainingToken <= count && !isReferenceUser) {
           flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
           return;
         }
@@ -1320,10 +1372,10 @@ If any information is not visible or unclear in the image, mark it as "Not found
           print("This request cost: \$${cost.toStringAsFixed(4)}");
           print('usages ------- ${responseData['usage']}');
 
-          final remainingMoney = 4.49 - cost;
+          final remainingMoney = 4.99 - cost;
           print('remainingMoney ----- $remainingMoney');
 
-          remainingToken = ((remainingMoney * 2500000) / 4.99).toDouble();
+          remainingToken = ((remainingMoney * 2000000) / 4.99).toDouble();
           print('remainingToken ------ $remainingToken');
 
           String answer = responseData['output'][0]['content'][0]['text'];

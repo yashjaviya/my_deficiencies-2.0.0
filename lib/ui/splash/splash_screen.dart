@@ -9,6 +9,7 @@ import 'package:my_deficiencies/firebase/realtime_database.dart';
 import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
 import 'package:my_deficiencies/ui/home/home_screen.dart';
+import 'package:my_deficiencies/ui/login/login_screen.dart';
 import 'package:my_deficiencies/ui/welcome/welcome_screen1.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,11 +23,11 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
 
-  // final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void initState() {
-    Get.put(PurchaseController()).onClickStartRestore();
+    // Get.put(PurchaseController()).onClickStartRestore();
     Get.put(LightDarkController());
     attDialog();
     super.initState();
@@ -53,12 +54,15 @@ class _SplashScreenState extends State<SplashScreen> {
           print('SharedPreferences ${preferences.getBool('isOnBoard')}');
         }
         bool isOnBoard = preferences.getBool('isOnBoard') ?? false;
+
+        print('_auth.currentUser ----- ${_auth.currentUser}');
+
         if (!isOnBoard) {
           FirebaseAuth.instance.signOut();
           Get.offAll(WelcomeScreen1());
-        } /*else if(_auth.currentUser == null) {
+        } else if(_auth.currentUser == null) {
           Get.offAll(LoginScreen());
-        } */else {
+        } else {
           Get.offAll(HomeScreen());
         }
       },

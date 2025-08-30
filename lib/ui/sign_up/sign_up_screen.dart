@@ -9,6 +9,8 @@ import 'package:my_deficiencies/color/app_color.dart';
 import 'package:my_deficiencies/common/common.dart';
 import 'package:my_deficiencies/common/dialog/dialog_widget.dart';
 import 'package:my_deficiencies/common/dialog/progress_dialog.dart';
+import 'package:my_deficiencies/model/reference_model.dart';
+import 'package:my_deficiencies/model/user_model.dart';
 import 'package:my_deficiencies/ui/home/home_screen.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -28,27 +30,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
 
   void signup() async {
     String username = usernameController.text.trim();
     String email = emailController.text.trim();
     String password = passwordController.text;
+    String confirmPassword = confirmPasswordController.text;
 
     if (username.isEmpty) {
       Fluttertoast.showToast(msg: 'Please Enter Your Name');
       return;
     }
+    if (validateEmail(emailController.text) != null) {
+      Fluttertoast.showToast(msg: "Please Enter Valid Email Address");
+      return;
+    }
+    if (validatePassword(passwordController.text) != null) {
+      Fluttertoast.showToast(msg: "Please Enter Valid Password");
+      return;
+    }
+    if (password != confirmPassword) {
+      Fluttertoast.showToast(msg: "Passwords do not match");
+      return;
+    }
+
     progressDialog.show();
     try {
-      if (validateEmail(emailController.text) != null) {
-        Fluttertoast.showToast(msg: "Please Enter Valid Email Address");
-        return;
-      }
-      if (validatePassword(passwordController.text) != null) {
-        Fluttertoast.showToast(msg: "Please Enter Valid Password");
-        return;
-      }
-
       // Create user
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
@@ -57,11 +66,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
       await userCredential.user?.updateDisplayName(username);
       await userCredential.user?.reload();
 
+      // final ref = ReferenceModel( // code: "QmF3tX7kR9dLsT2vN6hCzY8pG5oM1jWa", // expiredDate: DateTime(2025, 12, 31, 23, 59), // isActive: true, // createdAt: DateTime.now(), // ); // // Save → returns the Firestore id // final generatedId = await saveReference(ref); // print("Saved with id: $generatedId");
+
+      final user = UserModel(
+        id: userCredential.user?.uid ?? "", 
+        email: email, 
+        remainingToken: 0,
+        isReferenceUser: false,
+        isSubscribe: false,
+        subscriptionToken: 0,
+      );
+      await UserModel.saveUser(user);
+
       Fluttertoast.showToast(msg: 'Signup successful! Welcome $username');
       progressDialog.close();
       Get.back();
     } on FirebaseAuthException catch (e) {
-      progressDialog.close();
       progressDialog.close();
       if (kDebugMode) {
         print('code:- ${e.code} message:- ${e.message}');
@@ -111,8 +131,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         accessToken: appleCredential.authorizationCode,
       );
 
-      final UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithCredential(oauthCredential);
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(oauthCredential);
 
       // Optional: Update display name
       if (appleCredential.givenName != null) {
@@ -191,7 +211,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         imageUrl: ImageData.icFail,
         title: 'Login Fail',
         description: message,
-        // description: 'Your entered data is wrong or you cn',
         btnText: 'Re Enter',
       ),
     );
@@ -211,12 +230,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   bool isShowPassword = true;
+  bool isShowConfirmPassword = true;
 
   @override
   void initState() {
     super.initState();
-
-    // WidgetsBindingObserver().
+    progressDialog.close();
   }
 
   @override
@@ -293,8 +312,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       margin: EdgeInsets.only(left: 5),
                       child: ImageWidget(
                         imageUrl: SvgAssetsData.icEmail,
-                        // width: 38,
-                        // height: 41,
                       ),
                     ),
                   ),
@@ -309,8 +326,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       margin: EdgeInsets.only(left: 5),
                       child: ImageWidget(
                         imageUrl: SvgAssetsData.icLock,
-                        // width: 18,
-                        // height: 21,
                       ),
                     ),
                     obscureText: isShowPassword,
@@ -323,12 +338,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       icon: Container(
                         padding: EdgeInsets.all(10),
                         child: ImageWidget(
-                          imageUrl:
-                              !isShowPassword
-                                  ? SvgAssetsData.icEye
-                                  : SvgAssetsData.icEyeClose,
-                          // width: 18,
-                          // height: 21,
+                          imageUrl: !isShowPassword
+                              ? SvgAssetsData.icEye
+                              : SvgAssetsData.icEyeClose,
+                        ),
+                      ),
+                    ),
+                  ),
+                  25.toDouble().hs,
+                  appTextField(
+                    margin: EdgeInsets.symmetric(horizontal: 24),
+                    hintText: 'Confirm Password',
+                    textInputType: TextInputType.visiblePassword,
+                    controller: confirmPasswordController,
+                    prefixIcon: Container(
+                      padding: EdgeInsets.all(5),
+                      margin: EdgeInsets.only(left: 5),
+                      child: ImageWidget(
+                        imageUrl: SvgAssetsData.icLock,
+                      ),
+                    ),
+                    obscureText: isShowConfirmPassword,
+                    suffixIcon: IconButton(
+                      onPressed: () {
+                        setState(() {
+                          isShowConfirmPassword = !isShowConfirmPassword;
+                        });
+                      },
+                      icon: Container(
+                        padding: EdgeInsets.all(10),
+                        child: ImageWidget(
+                          imageUrl: !isShowConfirmPassword
+                              ? SvgAssetsData.icEye
+                              : SvgAssetsData.icEyeClose,
                         ),
                       ),
                     ),

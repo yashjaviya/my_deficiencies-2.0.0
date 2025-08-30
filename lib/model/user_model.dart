@@ -2,31 +2,51 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
-  final String uid;   // Firebase UID
+  final String id;   // Firebase UID
   final String email;
-  final double token;
+  final double remainingToken;
+  bool? isSubscribe;
+  double? subscriptionPlan;
+  num? subscriptionToken;
+  bool? isReferenceUser;
+  String? referenceId;
 
-  const UserModel({
-    required this.uid,
+  UserModel({
+    required this.id,
     required this.email,
-    required this.token,
+    required this.remainingToken,
+    this.subscriptionPlan,
+    this.isReferenceUser,
+    this.referenceId,
+    this.subscriptionToken,
+    this.isSubscribe
   });
 
   /// Convert object to Map (for Firestore)
   Map<String, dynamic> toMap() {
     return {
-      'uid': uid,
+      'uid': id,
       'email': email,
-      'token': token,
+      'token': remainingToken,
+      'subscriptionPlan': subscriptionPlan,
+      'isReferenceUser': isReferenceUser,
+      'referenceId': referenceId,
+      'subscriptionToken': subscriptionToken,
+      'isSubscribe': isSubscribe
     };
   }
 
   /// Create object from Map (Firestore)
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
-      uid: map['uid'] ?? '',
+      id: map['uid'] ?? '',
       email: map['email'] ?? '',
-      token: map['token'] ?? '',
+      remainingToken: (map['token'] ?? 0).toDouble(),
+      subscriptionPlan: (map['subscriptionPlan'] ?? 0).toDouble(),
+      referenceId: map['referenceId'] ?? '',
+      isReferenceUser: map['isReferenceUser'] ?? false,
+      subscriptionToken: map['subscriptionToken'] ?? 0,
+      isSubscribe: map['isSubscribe'] ?? false,
     );
   }
 
@@ -38,31 +58,29 @@ class UserModel {
       UserModel.fromMap(json.decode(source));
 
   @override
-  String toString() => 'UserModel(uid: $uid, email: $email, token: $token)';
-}
+  String toString() =>
+      'UserModel(uid: $id, email: $email, remainingToken: $remainingToken, subscriptionPlan: $subscriptionPlan, referenceId: $referenceId, isReferenceUser: $isReferenceUser, subscriptionToken: $subscriptionToken, isSubscribe: $isSubscribe)';
 
-// Firestore reference
-final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  // ================= FIREBASE EVENTS ================= //
 
-/// Save user (creates or replaces document)
-Future<void> saveUser(UserModel user) async {
-  await firestore
-      .collection("users")
-      .doc(user.uid)
-      .set(user.toMap(), SetOptions(merge: true)); // merge = don’t overwrite
-}
+  static final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-/// Get user by UID
-Future<UserModel?> getUser(String uid) async {
-  final doc = await firestore.collection("users").doc(uid).get();
-
-  if (doc.exists && doc.data() != null) {
-    return UserModel.fromMap(doc.data()!);
+  /// Save user (creates or replaces document)
+  static Future<void> saveUser(UserModel user) async { 
+    await firestore .collection("users") .doc(user.id) .set(user.toMap(), SetOptions(merge: true)); 
   }
-  return null;
-}
 
-/// Update user fields (does not overwrite whole record)
-Future<void> updateUser(String uid, Map<String, dynamic> updates) async {
-  await firestore.collection("users").doc(uid).update(updates);
+  /// Get user by UID
+  static Future<UserModel?> getById(String uid) async {
+    final doc = await firestore.collection("users").doc(uid).get();
+    if (doc.exists && doc.data() != null) {
+      return UserModel.fromMap(doc.data()!);
+    }
+    return null;
+  }
+
+  /// Update user fields
+  static Future<void> update(String uid, Map<String, dynamic> updates) async {
+    await firestore.collection("users").doc(uid).update(updates);
+  }
 }

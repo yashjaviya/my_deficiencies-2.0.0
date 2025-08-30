@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,9 +10,11 @@ import 'package:my_deficiencies/color/app_color.dart';
 import 'package:my_deficiencies/common/common.dart';
 import 'package:my_deficiencies/common/dialog/dialog_widget.dart';
 import 'package:my_deficiencies/common/dialog/progress_dialog.dart';
+import 'package:my_deficiencies/model/user_model.dart';
 import 'package:my_deficiencies/ui/home/home_screen.dart';
 import 'package:my_deficiencies/ui/sign_up/sign_up_screen.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -52,12 +56,36 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
         progressDialog.show();
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
         Fluttertoast.showToast(msg: "Login Successful");
         progressDialog.close();
+
+        String uid = userCredential.user!.uid; // 👈 UID here
+        String email = userCredential.user!.email ?? "";
+        final userData = await UserModel.getById(uid);
+        print('userData ---- $userData');
+
+        SharedPreferences preferences = await SharedPreferences.getInstance();
+
+        final Map<String, dynamic> userMap = {
+          "uid": uid,
+          "email": email,
+          "token": userData?.remainingToken ?? 0,
+          "subscriptionPlan": userData?.subscriptionPlan ?? 0,
+          "isReferenceUser": userData?.isReferenceUser ?? false,
+          "referenceId": userData?.referenceId ?? '',
+          "isSubscribe": userData?.isSubscribe ?? false,
+        };
+
+        // convert to JSON
+        final String userJson = jsonEncode(userMap);
+
+        // save into SharedPreferences as one string
+        await preferences.setString("userData", userJson);
+
         Get.dialog(
           name: '/DialogWidgetSuccessfully',
           DialogWidget(
