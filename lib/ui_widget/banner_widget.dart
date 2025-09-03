@@ -21,42 +21,22 @@ class _RewardedAdWidgetState extends State<RewardedAdWidget> {
   }
 
   void _loadAd() {
-    RewardedAd.load(
-      adUnitId: 'ca-app-pub-3940256099942544/5224354917', // Test Rewarded Ad ID
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) {
-          setState(() {
-            _rewardedAd = ad;
-            _isAdLoaded = true;
-          });
-          ad.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              setState(() {
-                _isAdLoaded = false;
-              });
-              _loadAd(); // Preload next ad
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              ad.dispose();
-              setState(() {
-                _isAdLoaded = false;
-              });
-              _loadAd();
-            },
-          );
-        },
-        onAdFailedToLoad: (error) {
-          setState(() {
-            _isAdLoaded = false;
-          });
-          print('Rewarded ad failed to load: $error');
-          _loadAd(); // Retry loading
-        },
-      ),
-    );
-  }
+  RewardedAd.load(
+    adUnitId: 'ca-app-pub-3940256099942544/5224354917',
+    request: const AdRequest(),
+    rewardedAdLoadCallback: RewardedAdLoadCallback(
+      onAdLoaded: (ad) {
+        _rewardedAd = ad;
+        _isAdLoaded = true;
+        _showAd(); // 👈 Auto-show as soon as it's loaded
+      },
+      onAdFailedToLoad: (error) {
+        print('Rewarded ad failed to load: $error');
+      },
+    ),
+  );
+}
+
 
   void _showAd() {
     if (_isAdLoaded && _rewardedAd != null) {

@@ -165,7 +165,7 @@ class ChatListHistoryModel {
       'isGpt4': isGpt4 ? 1 : 0,
       'imagePath': imagePath ?? '',
       'imageText': imageText ?? '',
-      'isDisplayButton': isDisplayButton ? 1 : 0,
+      'isDisplayButton': isDisplayButton,
     };
   }
 
@@ -179,7 +179,7 @@ class ChatListHistoryModel {
       isGpt4: (json["isGpt4"] ?? 1) == 1,
       imagePath: json["imagePath"],
       imageText: json["imageText"],
-      isDisplayButton: (json["isDisplayButton"] ?? 0) == 1,
+      isDisplayButton: json['isDisplayButton'] ?? false,
     );
   }
 }

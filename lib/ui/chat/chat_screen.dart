@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:clipboard/clipboard.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' show parse;
@@ -94,7 +95,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   RemoteConfig remoteConfig = Get.put(RemoteConfig());
 
-  static const _key = "free_prompt_current_version";
+  static const String _key = "currentFreePromptIndex";
+
+  List<Map<String, dynamic>> prompt = [];
 
   final picker.ImagePicker _imagePicker = picker.ImagePicker();
   picker.XFile? _pickedFile;
@@ -473,71 +476,90 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                           ),
                                           child: InkWell(
                                             onTap: () {
-                                              Get.to(PremiumScreen())!.then((
-                                                value,
-                                              ) {
-                                                if (purchaseController
-                                                    .isSubscribe) {
-                                                  Utility
-                                                      .promptController
-                                                      .text = Utility
-                                                          .chatHistoryList[Utility
-                                                                  .chatHistoryList
-                                                                  .length -
-                                                              2]
-                                                          .message!;
+                                              Get.to(PremiumScreen())!.then((value) {
+                                                if (purchaseController.isSubscribe) {
+                                                  Utility.promptController.text =
+                                                      Utility.chatHistoryList[Utility.chatHistoryList.length - 2].message!;
                                                   sendMessage(
-                                                    iId:
-                                                        Utility
-                                                            .chatHistoryList[Utility
-                                                                    .chatHistoryList
-                                                                    .length -
-                                                                2]
-                                                            .id,
+                                                    iId: Utility.chatHistoryList[Utility.chatHistoryList.length - 2].id,
                                                   );
                                                 }
                                               });
                                             },
                                             child: Container(
                                               decoration: BoxDecoration(
-                                                color: AppColor.containerColor
-                                                    .withValues(alpha: 0.3),
-                                                borderRadius:
-                                                    BorderRadius.circular(30.0),
+                                                color: AppColor.containerColor.withValues(alpha: 0.3),
+                                                borderRadius: BorderRadius.circular(30.0),
                                                 border: Border.all(
                                                   color: AppColor.borderColor,
                                                 ),
                                               ),
                                               child: Padding(
                                                 padding: EdgeInsets.symmetric(
-                                                  vertical:
-                                                      lightDarkController
-                                                              .isLight
-                                                          ? 10.0
-                                                          : 5.0,
+                                                  vertical: lightDarkController.isLight ? 10.0 : 5.0,
                                                   horizontal: 16.0,
                                                 ),
                                                 child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
+                                                  mainAxisSize: MainAxisSize.min,
                                                   children: [
                                                     ImageWidget(
-                                                      imageUrl:
-                                                          SvgAssetsData
-                                                              .icPremium,
+                                                      imageUrl: SvgAssetsData.icPremium,
                                                       color: AppColor.white,
                                                     ),
                                                     10.toDouble().ws,
                                                     appText(
-                                                      title:
-                                                          "For Full Report - Go Premium"
-                                                              .tr,
+                                                      title: "For Full Report - Go Premium".tr,
                                                       color: AppColor.white,
-                                                      fontWeight:
-                                                          FontWeight.w300,
+                                                      fontWeight: FontWeight.w300,
                                                       fontSize: 16,
-                                                      textAlign:
-                                                          TextAlign.center,
+                                                      textAlign: TextAlign.center,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+
+                                        const SizedBox(height: 12), // spacing between buttons
+
+                                        // 🔹 New Button (Full Report with Ads)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 10.0,
+                                          ),
+                                          child: InkWell(
+                                            onTap: () async {
+                                              // bool adWatched = await showRewardedAd();
+                                              // if (adWatched) {
+                                                await showNextVersion();
+                                                // setState(() {}); // refresh UI
+                                              // }
+                                            },
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: AppColor.containerColor.withValues(alpha: 0.3),
+                                                borderRadius: BorderRadius.circular(30.0),
+                                                border: Border.all(
+                                                  color: AppColor.borderColor,
+                                                ),
+                                              ),
+                                              child: Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                  vertical: lightDarkController.isLight ? 10.0 : 5.0,
+                                                  horizontal: 16.0,
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.play_circle_fill, color: AppColor.white),
+                                                    10.toDouble().ws,
+                                                    appText(
+                                                      title: "Full Report (with Ads)".tr,
+                                                      color: AppColor.white,
+                                                      fontWeight: FontWeight.w300,
+                                                      fontSize: 16,
+                                                      textAlign: TextAlign.center,
                                                     ),
                                                   ],
                                                 ),
@@ -546,7 +568,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                           ),
                                         ),
                                       ],
-                                    ),
+                                    )
                                   );
                                 },
                               ),
@@ -1035,48 +1057,180 @@ If any information is not visible or unclear in the image, mark it as "Not found
   }
 
   Future<void> showNextVersion() async {
-  final freePromptJson = remoteConfig.getString('free_prompt_version_2_0_1');
-  final Map<String, dynamic> freePrompts = jsonDecode(freePromptJson);
+  // Prevent multiple simultaneous calls
+  if (getData) {
+    flutterToastCenter("Please wait, processing...");
+    return;
+  }
 
-  int currentIndex = await getCurrentIndex(); // ✅ await here
-  final versions = freePrompts.keys.toList()..sort();
+  print('this is show next version function call');
 
-  if (currentIndex < versions.length - 1) {
-    currentIndex++;
-    final nextVersion = versions[currentIndex];
-    final responseText = freePrompts[nextVersion];
+  int currentIndex = await getCurrentIndex();
+  int nextIndex = currentIndex + 1;
 
+  // Check if nextIndex is within valid range (1 to 4)
+  if (nextIndex > 4) {
+    flutterToastCenter("No more free versions available.");
+    return;
+  }
+
+  String nextKey = "free_prompt_version_2_0_$nextIndex";
+  print('nextKey >>>> $nextKey');
+
+  final responseText = remoteConfig.getString(nextKey);
+
+  if (responseText.isEmpty) {
+    flutterToastCenter("No more free versions available for $nextKey.");
+    setState(() {
+      getData = false;
+    });
+    return;
+  }
+
+  // 🔹 Add shimmer placeholder
+  setState(() {
+    getData = true;
+    Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
     Utility.chatHistoryList.add(
       ChatListHistoryModel(
-        id: Utility.chatHistoryList.last.id + 1,
-        message: responseText,
+        id: Utility.chatHistoryList.isEmpty ? 1 : Utility.chatHistoryList.last.id + 1,
+        message: "ABC", // Placeholder
         currentDateAndTime: DateTime.now().toString(),
         isSender: false,
         isAnimation: false,
         isGpt4: false,
-        isDisplayButton: currentIndex < versions.length - 1,
+        isDisplayButton: nextIndex < 4,
       ),
     );
+    print('Added placeholder for $nextKey');
+    scrollController.jumpTo(scrollController.position.maxScrollExtent);
+  });
 
-    setCurrentIndex(currentIndex); // ✅ save index
+  // 🔹 Load & Show Rewarded Ad
+  RewardedAd.load(
+    adUnitId: 'ca-app-pub-3940256099942544/5224354917', // Test ad unit
+    request: const AdRequest(),
+    rewardedAdLoadCallback: RewardedAdLoadCallback(
+      onAdLoaded: (ad) {
+        ad.show(
+          onUserEarnedReward: (AdWithoutView ad, RewardItem reward) async {
+            print("Reward earned! Now fetching GPT response for $nextKey...");
+
+            // 🔹 Build full conversation context
+            List<Map<String, dynamic>> messages = [];
+            for (var chat in Utility.chatHistoryList) {
+              if (chat.message != "ABC") {
+                messages.add({
+                  'role': chat.isSender ? 'user' : 'assistant',
+                  'content': chat.message,
+                });
+              }
+            }
+
+            // Append new free version instruction
+            messages.add({
+              'role': 'assistant',
+              'content': responseText,
+            });
+
+            try {
+              final apiKey = remoteConfig.getString('gpt_token');
+              final url = Uri.parse('https://api.openai.com/v1/responses');
+
+              final headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $apiKey',
+              };
+
+              final body = jsonEncode({
+                'model': 'gpt-4.1',
+                'instructions': responseText,
+                'input': messages,
+              });
+
+              final response = await http.post(url, headers: headers, body: body);
+
+              if (response.statusCode == 200) {
+                var responseData = jsonDecode(response.body);
+                String answer = responseData['output'][0]['content'][0]['text'];
+
+                setState(() {
+                  Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
+                  Utility.chatHistoryList.add(
+                    ChatListHistoryModel(
+                      id: Utility.chatHistoryList.isEmpty ? 1 : Utility.chatHistoryList.last.id + 1,
+                      message: answer,
+                      currentDateAndTime: DateTime.now().toString(),
+                      isSender: false,
+                      isAnimation: false,
+                      isGpt4: false,
+                      isDisplayButton: nextIndex < 4,
+                    ),
+                  );
+                  getData = false;
+                  scrollController.jumpTo(scrollController.position.maxScrollExtent);
+                });
+
+                // Save DB
+                await DBHelper.updateData(
+                  jsonEncode(Utility.chatHistoryList),
+                  Utility.isSenderId,
+                  DateTime.now().millisecondsSinceEpoch.toString(),
+                  '',
+                  null,
+                );
+
+                await setCurrentIndex(nextIndex);
+              } else {
+                setState(() {
+                  Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
+                  getData = false;
+                });
+                flutterToastCenter("Server Timed Out for version $nextIndex. Please try again.");
+              }
+            } catch (e) {
+              setState(() {
+                Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
+                getData = false;
+              });
+              print("Error in showNextVersion for $nextKey: $e");
+              flutterToastCenter("Something went wrong for version $nextIndex. Please try again.");
+            }
+          },
+        );
+      },
+      onAdFailedToLoad: (error) {
+        setState(() {
+          Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
+          getData = false;
+        });
+        print("Rewarded ad failed for $nextKey: $error");
+        flutterToastCenter("Ad failed to load for version $nextIndex. Please try again.");
+      },
+    ),
+  );
+}
+
+
+
+  static Future<int> getCurrentIndex() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_key) ?? 1; // default = version_2_0_1
   }
-}
 
-static Future<int> getCurrentIndex() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getInt(_key) ?? 0; // default = 0
-}
+  static Future<void> setCurrentIndex(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_key, index);
+  }
 
-static Future<void> setCurrentIndex(int index) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setInt(_key, index);
-}
 
   Future<void> sendMessage({int? iId, bool isReload = false}) async {
     // if (remainingToken == 0 && !isReferenceUser) {
     //   flutterToastCenter("No tokens available. Renew your subscription to continue.");
     //   return;
     // }
+
+    await setCurrentIndex(1);
 
     FocusManager.instance.primaryFocus?.unfocus();
     if (Utility.promptController.text != "" ||
@@ -1307,7 +1461,6 @@ static Future<void> setCurrentIndex(int index) async {
           scrollController.jumpTo(scrollController.position.maxScrollExtent);
         });
       }
-      List<Map<String, dynamic>> prompt = [];
 
       for (int i = 0; i < Utility.chatHistoryList.length; i++) {
         bool isQuestions1 = Utility.chatHistoryList[i].message == question1;
@@ -1326,7 +1479,7 @@ static Future<void> setCurrentIndex(int index) async {
                         ? remoteConfig.getString('prompt_view_questions2_2_0_0')
                         : (purchaseController.isSubscribe || isReferenceUser
                             ? remoteConfig.getString('prompt_view_premium_version_2_0_0')
-                            : remoteConfig.getString('prompt_view_free_version_2_0_0'))}, not html format',
+                            : remoteConfig.getString('free_prompt_version_2_0_1'))}, not html format',
             'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant',
           });
 
@@ -1350,7 +1503,7 @@ static Future<void> setCurrentIndex(int index) async {
                     ? remoteConfig.getString('prompt_view_questions2_2_0_0')
                     : (purchaseController.isSubscribe || isReferenceUser
                         ? remoteConfig.getString('prompt_view_premium_version_2_0_0')
-                        : remoteConfig.getString('prompt_view_free_version_2_0_0'))}, not html format',
+                        : remoteConfig.getString('free_prompt_version_2_0_1'))}, not html format',
             'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant',
           });
         }
@@ -1372,7 +1525,7 @@ static Future<void> setCurrentIndex(int index) async {
           'instructions':
               purchaseController.isSubscribe || isReferenceUser
                   ? remoteConfig.getString('premium_prompt_version_2_0_0')
-                  : '${remoteConfig.getString('free_prompt_version_2_0_0')} not html format',
+                  : '${remoteConfig.getString('free_prompt_version_2_0_1')} not html format',
           'input': prompt,
         });
 
