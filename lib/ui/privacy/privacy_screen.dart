@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:my_deficiencies/color/app_color.dart';
 import 'package:my_deficiencies/common/common.dart';
 import 'package:my_deficiencies/ui/home/home_screen.dart';
+import 'package:my_deficiencies/ui/login/login_screen.dart';
 
 class PrivacyScreen extends StatelessWidget {
   const PrivacyScreen({super.key});
@@ -178,7 +179,7 @@ isn’t yet published.
               // if (FirebaseAuth.instance.currentUser == null) {
               //   Get.offAll(LoginScreen());
               // } else {
-                Get.offAll(HomeScreen());
+                Get.offAll(LoginScreen());
               // }
             },
             child: Container(

@@ -1,61 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-class BannerAdWidget extends StatefulWidget {
-  const BannerAdWidget({super.key});
+class RewardedAdWidget extends StatefulWidget {
+  final VoidCallback onAdRewarded; // Callback when reward is earned
+
+  const RewardedAdWidget({super.key, required this.onAdRewarded});
 
   @override
-  State<BannerAdWidget> createState() => _BannerAdWidgetState();
+  State<RewardedAdWidget> createState() => _RewardedAdWidgetState();
 }
 
-class _BannerAdWidgetState extends State<BannerAdWidget> {
-  BannerAd? _bannerAd;
+class _RewardedAdWidgetState extends State<RewardedAdWidget> {
+  RewardedAd? _rewardedAd;
+  bool _isAdLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111', // Test Banner
-      size: AdSize.banner,
+    _loadAd();
+  }
+
+  void _loadAd() {
+    RewardedAd.load(
+      adUnitId: 'ca-app-pub-3940256099942544/5224354917', // Test Rewarded Ad ID
       request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() {}),
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          setState(() {
+            _rewardedAd = ad;
+            _isAdLoaded = true;
+          });
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              setState(() {
+                _isAdLoaded = false;
+              });
+              _loadAd(); // Preload next ad
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              ad.dispose();
+              setState(() {
+                _isAdLoaded = false;
+              });
+              _loadAd();
+            },
+          );
+        },
+        onAdFailedToLoad: (error) {
+          setState(() {
+            _isAdLoaded = false;
+          });
+          print('Rewarded ad failed to load: $error');
+          _loadAd(); // Retry loading
         },
       ),
-    )..load();
+    );
+  }
+
+  void _showAd() {
+    if (_isAdLoaded && _rewardedAd != null) {
+      _rewardedAd!.show(
+        onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+          widget.onAdRewarded(); // Call the callback when reward is earned
+        },
+      );
+    } else {
+      print('Ad not loaded yet');
+      _loadAd();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_bannerAd == null) return const SizedBox();
-    return SizedBox(
-      width: _bannerAd!.size.width.toDouble(),
-      height: _bannerAd!.size.height.toDouble(),
-      child: AdWidget(ad: _bannerAd!),
+    return ElevatedButton(
+      onPressed: _isAdLoaded ? _showAd : null,
+      child: const Text('Load More Report'),
     );
   }
 
   @override
   void dispose() {
-    _bannerAd?.dispose();
+    _rewardedAd?.dispose();
     super.dispose();
   }
 }
-
-
-// 1. Banner Ad Test ID
-// ca-app-pub-3940256099942544/6300978111
-
-// 2. Interstitial Ad Test ID
-// ca-app-pub-3940256099942544/1033173712
-
-// 3. Rewarded Ad Test ID
-// ca-app-pub-3940256099942544/5224354917
-
-// 4. Native Advanced Ad Test ID
-// ca-app-pub-3940256099942544/2247696110
-
-// 5. App Open Ad Test ID
-// ca-app-pub-3940256099942544/3419835294

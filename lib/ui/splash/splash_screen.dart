@@ -48,7 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Future.delayed(
       Duration(seconds: 5),
           () async {
-        // _auth.signOut();
+        _auth.signOut();
         SharedPreferences preferences = await SharedPreferences.getInstance();
         if (kDebugMode) {
           print('SharedPreferences ${preferences.getBool('isOnBoard')}');

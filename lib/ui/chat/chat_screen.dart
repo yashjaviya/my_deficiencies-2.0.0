@@ -94,6 +94,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   RemoteConfig remoteConfig = Get.put(RemoteConfig());
 
+  static const _key = "free_prompt_current_version";
+
   final picker.ImagePicker _imagePicker = picker.ImagePicker();
   picker.XFile? _pickedFile;
 
@@ -911,7 +913,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               SizedBox(height: Get.mediaQuery.padding.bottom),
             ],
           ),
-          bottomNavigationBar: const BannerAdWidget(),
+          // bottomNavigationBar: const BannerAdWidget(),
         );
       },
     );
@@ -1032,11 +1034,49 @@ If any information is not visible or unclear in the image, mark it as "Not found
     return buffer.toString().trim();
   }
 
+  Future<void> showNextVersion() async {
+  final freePromptJson = remoteConfig.getString('free_prompt_version_2_0_1');
+  final Map<String, dynamic> freePrompts = jsonDecode(freePromptJson);
+
+  int currentIndex = await getCurrentIndex(); // ✅ await here
+  final versions = freePrompts.keys.toList()..sort();
+
+  if (currentIndex < versions.length - 1) {
+    currentIndex++;
+    final nextVersion = versions[currentIndex];
+    final responseText = freePrompts[nextVersion];
+
+    Utility.chatHistoryList.add(
+      ChatListHistoryModel(
+        id: Utility.chatHistoryList.last.id + 1,
+        message: responseText,
+        currentDateAndTime: DateTime.now().toString(),
+        isSender: false,
+        isAnimation: false,
+        isGpt4: false,
+        isDisplayButton: currentIndex < versions.length - 1,
+      ),
+    );
+
+    setCurrentIndex(currentIndex); // ✅ save index
+  }
+}
+
+static Future<int> getCurrentIndex() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getInt(_key) ?? 0; // default = 0
+}
+
+static Future<void> setCurrentIndex(int index) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt(_key, index);
+}
+
   Future<void> sendMessage({int? iId, bool isReload = false}) async {
-    if (remainingToken == 0 && !isReferenceUser) {
-      flutterToastCenter("No tokens available. Renew your subscription to continue.");
-      return;
-    }
+    // if (remainingToken == 0 && !isReferenceUser) {
+    //   flutterToastCenter("No tokens available. Renew your subscription to continue.");
+    //   return;
+    // }
 
     FocusManager.instance.primaryFocus?.unfocus();
     if (Utility.promptController.text != "" ||
@@ -1083,10 +1123,10 @@ If any information is not visible or unclear in the image, mark it as "Not found
       // );
 
       if (!isReload && _pickedFile != null) {
-        if (remainingToken <= 10000  && !isReferenceUser) {
-          flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
-          return;
-        }
+        // if (remainingToken <= 10000  && !isReferenceUser) {
+        //   flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
+        //   return;
+        // }
 
         // Extract wording from image
         extractedText = await _extractMedicineFromImage(_pickedFile!.path);
@@ -1177,7 +1217,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
           // Use the edited medicine name as the question
           String editedMedicine = _medicineController.text.trim();
           question =
-              editedMedicine.isNotEmpty ? editedMedicine : 'Unknown Medicine';
+              editedMedicine.isNotEmpty ? editedMedicine : 'Synthetics analyzed';
         } else {
           if (mounted) {
             await showDialog(
@@ -1222,7 +1262,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
             imagePath: _pickedFile?.path ?? '',
             imageText:
                 extractedText != null
-                    ? extractedText['Medicine'] ?? 'Unknown Medicine'
+                    ? extractedText['Medicine'] ?? 'Synthetics analyzed'
                     : null,
           ),
         );
@@ -1339,10 +1379,10 @@ If any information is not visible or unclear in the image, mark it as "Not found
         final count = await TokenizerService().countTokens(jsonEncode(body), model: "gpt-4");
         print("Token count: $count");
 
-        if (remainingToken <= count && !isReferenceUser) {
-          flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
-          return;
-        }
+        // if (remainingToken <= count && !isReferenceUser) {
+        //   flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
+        //   return;
+        // }
 
         // body['max_tokens'] = remainingToken - count;
 

@@ -301,7 +301,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                                         }
                                       },
                                     );
-                                  } else */{
+                                  } else {
                                     SkuModel skuModel = purchaseController.skuModelList[selectedIndex];
                                     List<ProductDetails> productDetails = purchaseController.productDetails.where((element) => element.id == skuModel.sku,).toList();
                                     if(productDetails.isNotEmpty) {
@@ -309,6 +309,22 @@ class _PremiumScreenState extends State<PremiumScreen> {
                                     } else {
                                       flutterToastCenter('Something is wrong');
                                     }
+                                  } */
+                                  if (purchaseController.skuModelList.isNotEmpty) {
+                                    final skuModel = purchaseController.skuModelList[selectedIndex];
+                                    final productDetails = purchaseController.productDetails
+                                        .where((element) => element.id == skuModel.sku)
+                                        .toList();
+
+                                    if (productDetails.isNotEmpty) {
+                                      purchaseController.onCLick(
+                                        productDetails: productDetails.first,
+                                      );
+                                    } else {
+                                      flutterToastCenter('Something is wrong');
+                                    }
+                                  } else {
+                                    flutterToastCenter('No subscription plans available');
                                   }
                                 },
                                 child: Container(
@@ -356,13 +372,15 @@ class _PremiumScreenState extends State<PremiumScreen> {
                           ),
                         ),
                         17.toDouble().hs,
-                        appText(
-                          title: purchaseController.skuModelList[selectedIndex].renewMessage,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: AppColor.white.withValues(alpha: 0.64),
-                          decorationColor: AppColor.white.withValues(alpha: 0.64),
-                        ),
+                        purchaseController.skuModelList.isNotEmpty
+                          ? appText(
+                              title: purchaseController.skuModelList[selectedIndex].renewMessage,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: AppColor.white.withValues(alpha: 0.64),
+                              decorationColor: AppColor.white.withValues(alpha: 0.64),
+                            )
+                          : const SizedBox.shrink(),
                         // 5.toDouble().hs,
                         Align(
                           alignment: Alignment.bottomCenter,

@@ -3,26 +3,28 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 class RemoteConfig extends GetxController {
-
-  static final remoteConfig = FirebaseRemoteConfig.instance;
-
+  static final FirebaseRemoteConfig remoteConfig = FirebaseRemoteConfig.instance;
 
   Future<FirebaseRemoteConfig?> init() async {
     try {
       await remoteConfig.setConfigSettings(
         RemoteConfigSettings(
-          fetchTimeout: const Duration(minutes: 5),
-          minimumFetchInterval: const Duration(minutes: 1),
-        )
+          fetchTimeout: const Duration(seconds: 10),
+          minimumFetchInterval: const Duration(seconds: 0), // Always fetch fresh
+        ),
       );
-      await remoteConfig.ensureInitialized();
-      await remoteConfig.fetchAndActivate();
+
+      final updated = await remoteConfig.fetchAndActivate();
+      if (kDebugMode) {
+        print("🔥 RemoteConfig updated: $updated");
+      }
+
       return remoteConfig;
     } catch (e) {
       if (kDebugMode) {
-        print('RemoteConfig init:- $e');
+        print('❌ RemoteConfig init failed: $e');
       }
-      return init();
+      return null;
     }
   }
 
@@ -33,5 +35,4 @@ class RemoteConfig extends GetxController {
   bool getBool(String key) {
     return remoteConfig.getBool(key);
   }
-
 }

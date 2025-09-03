@@ -141,6 +141,7 @@ class ChatListHistoryModel {
   bool isGpt4;
   String? imagePath;
   String? imageText;
+  bool isDisplayButton;
 
   ChatListHistoryModel({
     required this.id,
@@ -150,7 +151,8 @@ class ChatListHistoryModel {
     required this.isAnimation,
     required this.isGpt4,
     this.imagePath,
-    this.imageText
+    this.imageText,
+    this.isDisplayButton = false, // default false
   });
 
   Map<String, dynamic> toJson() {
@@ -162,7 +164,8 @@ class ChatListHistoryModel {
       'isAnimation': isAnimation ? 1 : 0,
       'isGpt4': isGpt4 ? 1 : 0,
       'imagePath': imagePath ?? '',
-      'imageText': imageText ?? ''
+      'imageText': imageText ?? '',
+      'isDisplayButton': isDisplayButton ? 1 : 0,
     };
   }
 
@@ -175,10 +178,12 @@ class ChatListHistoryModel {
       isAnimation: (json["isAnimation"] ?? 0) == 1,
       isGpt4: (json["isGpt4"] ?? 1) == 1,
       imagePath: json["imagePath"],
-      imageText: json["imageText"]
+      imageText: json["imageText"],
+      isDisplayButton: (json["isDisplayButton"] ?? 0) == 1,
     );
   }
 }
+
 
 class AddChatListHistory {
   Future<void> saveChatListHistory({
