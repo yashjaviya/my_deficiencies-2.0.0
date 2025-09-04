@@ -97,6 +97,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   static const String _key = "currentFreePromptIndex";
 
+  bool _isAlreadyRunning = false;
+
   List<Map<String, dynamic>> prompt = [];
 
   final picker.ImagePicker _imagePicker = picker.ImagePicker();
@@ -140,7 +142,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       final user = UserModel.fromJson(userJson);
 
       // ✅ Now you can use user object
-      print("Fetched User: ${user.email}, Token: ${user.remainingToken}");
+      // print("Fetched User: ${user.email}, Token: ${user.remainingToken}");
 
       setState(() {
         isSubscribe = user.isSubscribe ?? false;
@@ -169,9 +171,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       setState(() {
         _pickedFile = image;
       });
-      print("Picked file path: ${image.path}");
+      // print("Picked file path: ${image.path}");
     } else {
-      print("No image selected");
+      // print("No image selected");
     }
   }
 
@@ -1005,8 +1007,8 @@ If any information is not visible or unclear in the image, mark it as "Not found
         inputToken += usagesToken['prompt_tokens'];
         outputToken += usagesToken['completion_tokens'];
 
-        print('inputToken --- 1 --- $inputToken');
-        print('outputToken --- 1 --- $outputToken');
+        // print('inputToken --- 1 --- $inputToken');
+        // print('outputToken --- 1 --- $outputToken');
 
         final lines = content.split('\n');
         final Map<String, String> fields = {};
@@ -1024,7 +1026,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
           }
         }
 
-        print('felds -----$fields');
+        // print('felds -----$fields');
 
         return fields.isNotEmpty ? fields : null;
       } else {
@@ -1057,159 +1059,164 @@ If any information is not visible or unclear in the image, mark it as "Not found
   }
 
   Future<void> showNextVersion() async {
-  // Prevent multiple simultaneous calls
-  if (getData) {
-    flutterToastCenter("Please wait, processing...");
-    return;
-  }
+    _isAlreadyRunning = getData && Utility.chatHistoryList.last.message == "ABC" && Utility.chatHistoryList.isNotEmpty;
 
-  print('this is show next version function call');
+    // Prevent multiple simultaneous calls
+    if (getData) {
+      flutterToastCenter("Please wait, processing...");
+      return;
+    }
 
-  int currentIndex = await getCurrentIndex();
-  int nextIndex = currentIndex + 1;
+    // print('this is show next version function call');
 
-  // Check if nextIndex is within valid range (1 to 4)
-  if (nextIndex > 4) {
-    flutterToastCenter("No more free versions available.");
-    return;
-  }
+    int currentIndex = await getCurrentIndex();
+    int nextIndex = currentIndex + 1;
 
-  String nextKey = "free_prompt_version_2_0_$nextIndex";
-  print('nextKey >>>> $nextKey');
+    // Check if nextIndex is within valid range (1 to 4)
+    if (nextIndex > 4) {
+      flutterToastCenter("No more free versions available.");
+      return;
+    }
 
-  final responseText = remoteConfig.getString(nextKey);
+    String nextKey = "free_prompt_version_2_0_$nextIndex";
+    print('nextKey >>>> $nextKey');
 
-  if (responseText.isEmpty) {
-    flutterToastCenter("No more free versions available for $nextKey.");
+    final responseText = remoteConfig.getString(nextKey);
+
+    if (responseText.isEmpty) {
+      flutterToastCenter("No more free versions available for $nextKey.");
+      setState(() {
+        getData = false;
+      });
+      return;
+    }
+
+    // 🔹 Add shimmer placeholder
     setState(() {
-      getData = false;
-    });
-    return;
-  }
+      getData = true;
+      Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
 
-  // 🔹 Add shimmer placeholder
-  setState(() {
-    getData = true;
-    Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
-    Utility.chatHistoryList.add(
-      ChatListHistoryModel(
-        id: Utility.chatHistoryList.isEmpty ? 1 : Utility.chatHistoryList.last.id + 1,
-        message: "ABC", // Placeholder
-        currentDateAndTime: DateTime.now().toString(),
-        isSender: false,
-        isAnimation: false,
-        isGpt4: false,
-        isDisplayButton: nextIndex < 4,
+      print('-----------');
+
+      Utility.chatHistoryList.add(
+        ChatListHistoryModel(
+          id: Utility.chatHistoryList.isEmpty ? 1 : Utility.chatHistoryList.last.id + 1,
+          message: "ABC", // Placeholder
+          currentDateAndTime: DateTime.now().toString(),
+          isSender: false,
+          isAnimation: false,
+          isGpt4: false,
+          isDisplayButton: nextIndex < 4,
+        ),
+      );
+      // print('Added placeholder for $nextKey');
+      scrollController.jumpTo(scrollController.position.maxScrollExtent);
+    });
+
+    // 🔹 Load & Show Rewarded Ad
+    RewardedAd.load(
+      adUnitId: 'ca-app-pub-3940256099942544/5224354917', // Test ad unit
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          ad.show(
+            onUserEarnedReward: (AdWithoutView ad, RewardItem reward) async {
+              // print("Reward earned! Now fetching GPT response for $nextKey...");
+
+              // 🔹 Build full conversation context
+              List<Map<String, dynamic>> messages = [];
+              for (var chat in Utility.chatHistoryList) {
+                if (chat.message != "ABC") {
+                  messages.add({
+                    'role': chat.isSender ? 'user' : 'assistant',
+                    'content': chat.message,
+                  });
+                }
+              }
+
+              // Append new free version instruction
+              messages.add({
+                'role': 'assistant',
+                'content': responseText,
+              });
+
+              try {
+                final apiKey = remoteConfig.getString('gpt_token');
+                final url = Uri.parse('https://api.openai.com/v1/responses');
+
+                final headers = {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer $apiKey',
+                };
+
+                final body = jsonEncode({
+                  'model': 'gpt-4.1',
+                  'instructions': responseText,
+                  'input': messages,
+                });
+
+                final response = await http.post(url, headers: headers, body: body);
+
+                if (response.statusCode == 200) {
+                  var responseData = jsonDecode(response.body);
+                  String answer = responseData['output'][0]['content'][0]['text'];
+
+                  setState(() {
+                    Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
+                    Utility.chatHistoryList.add(
+                      ChatListHistoryModel(
+                        id: Utility.chatHistoryList.isEmpty ? 1 : Utility.chatHistoryList.last.id + 1,
+                        message: answer,
+                        currentDateAndTime: DateTime.now().toString(),
+                        isSender: false,
+                        isAnimation: false,
+                        isGpt4: false,
+                        isDisplayButton: nextIndex < 4,
+                      ),
+                    );
+                    getData = false;
+                    scrollController.jumpTo(scrollController.position.maxScrollExtent);
+                  });
+
+                  // Save DB
+                  await DBHelper.updateData(
+                    jsonEncode(Utility.chatHistoryList),
+                    Utility.isSenderId,
+                    DateTime.now().millisecondsSinceEpoch.toString(),
+                    '',
+                    null,
+                  );
+
+                  await setCurrentIndex(nextIndex);
+                } else {
+                  setState(() {
+                    Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
+                    getData = false;
+                  });
+                  flutterToastCenter("Server Timed Out for version $nextIndex. Please try again.");
+                }
+              } catch (e) {
+                setState(() {
+                  Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
+                  getData = false;
+                });
+                print("Error in showNextVersion for $nextKey: $e");
+                flutterToastCenter("Something went wrong for version $nextIndex. Please try again.");
+              }
+            },
+          );
+        },
+        onAdFailedToLoad: (error) {
+          setState(() {
+            Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
+            getData = false;
+          });
+          print("Rewarded ad failed for $nextKey: $error");
+          flutterToastCenter("Ad failed to load for version $nextIndex. Please try again.");
+        },
       ),
     );
-    print('Added placeholder for $nextKey');
-    scrollController.jumpTo(scrollController.position.maxScrollExtent);
-  });
-
-  // 🔹 Load & Show Rewarded Ad
-  RewardedAd.load(
-    adUnitId: 'ca-app-pub-3940256099942544/5224354917', // Test ad unit
-    request: const AdRequest(),
-    rewardedAdLoadCallback: RewardedAdLoadCallback(
-      onAdLoaded: (ad) {
-        ad.show(
-          onUserEarnedReward: (AdWithoutView ad, RewardItem reward) async {
-            print("Reward earned! Now fetching GPT response for $nextKey...");
-
-            // 🔹 Build full conversation context
-            List<Map<String, dynamic>> messages = [];
-            for (var chat in Utility.chatHistoryList) {
-              if (chat.message != "ABC") {
-                messages.add({
-                  'role': chat.isSender ? 'user' : 'assistant',
-                  'content': chat.message,
-                });
-              }
-            }
-
-            // Append new free version instruction
-            messages.add({
-              'role': 'assistant',
-              'content': responseText,
-            });
-
-            try {
-              final apiKey = remoteConfig.getString('gpt_token');
-              final url = Uri.parse('https://api.openai.com/v1/responses');
-
-              final headers = {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer $apiKey',
-              };
-
-              final body = jsonEncode({
-                'model': 'gpt-4.1',
-                'instructions': responseText,
-                'input': messages,
-              });
-
-              final response = await http.post(url, headers: headers, body: body);
-
-              if (response.statusCode == 200) {
-                var responseData = jsonDecode(response.body);
-                String answer = responseData['output'][0]['content'][0]['text'];
-
-                setState(() {
-                  Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
-                  Utility.chatHistoryList.add(
-                    ChatListHistoryModel(
-                      id: Utility.chatHistoryList.isEmpty ? 1 : Utility.chatHistoryList.last.id + 1,
-                      message: answer,
-                      currentDateAndTime: DateTime.now().toString(),
-                      isSender: false,
-                      isAnimation: false,
-                      isGpt4: false,
-                      isDisplayButton: nextIndex < 4,
-                    ),
-                  );
-                  getData = false;
-                  scrollController.jumpTo(scrollController.position.maxScrollExtent);
-                });
-
-                // Save DB
-                await DBHelper.updateData(
-                  jsonEncode(Utility.chatHistoryList),
-                  Utility.isSenderId,
-                  DateTime.now().millisecondsSinceEpoch.toString(),
-                  '',
-                  null,
-                );
-
-                await setCurrentIndex(nextIndex);
-              } else {
-                setState(() {
-                  Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
-                  getData = false;
-                });
-                flutterToastCenter("Server Timed Out for version $nextIndex. Please try again.");
-              }
-            } catch (e) {
-              setState(() {
-                Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
-                getData = false;
-              });
-              print("Error in showNextVersion for $nextKey: $e");
-              flutterToastCenter("Something went wrong for version $nextIndex. Please try again.");
-            }
-          },
-        );
-      },
-      onAdFailedToLoad: (error) {
-        setState(() {
-          Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
-          getData = false;
-        });
-        print("Rewarded ad failed for $nextKey: $error");
-        flutterToastCenter("Ad failed to load for version $nextIndex. Please try again.");
-      },
-    ),
-  );
-}
+  }
 
 
 
@@ -1285,7 +1292,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
         // Extract wording from image
         extractedText = await _extractMedicineFromImage(_pickedFile!.path);
 
-        print('extractedText >>>>> ${extractedText}');
+        // print('extractedText >>>>> ${extractedText}');
 
         if (extractedText != null
             // extractedText.containsKey('Medicine') &&
@@ -1305,7 +1312,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
             text: initialMedicineName,
           );
 
-          print('Medicine name. >>>>>>> ${_medicineController}');
+          // print('Medicine name. >>>>>>> ${_medicineController}');
 
           bool? userConfirmed = await showDialog<bool>(
             context: context,
@@ -1468,6 +1475,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
         if (kDebugMode) {
           // print('isQuestions $isQuestions1');
         }
+
+        print('Utility.chatHistoryList[i].message ----- ${Utility.chatHistoryList[i].message}');
+
         if (Utility.chatHistoryList[i].message != '' &&
             Utility.chatHistoryList[i].message != 'ABC') {
           prompt.add({
@@ -1530,7 +1540,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
         });
 
         final count = await TokenizerService().countTokens(jsonEncode(body), model: "gpt-4");
-        print("Token count: $count");
+        // print("Token count: $count");
 
         // if (remainingToken <= count && !isReferenceUser) {
         //   flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
@@ -1539,7 +1549,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
 
         // body['max_tokens'] = remainingToken - count;
 
-        // print('111111111111 $body');
+        print('111111111111 $prompt');
 
         final response = await http.post(url, headers: headers, body: body);
         if (kDebugMode) {
@@ -1562,14 +1572,14 @@ If any information is not visible or unclear in the image, mark it as "Not found
           final usages = responseData['usage'];
 
           final cost = calcCost(usages['input_tokens'], usages['output_tokens']);
-          print("This request cost: \$${cost.toStringAsFixed(4)}");
-          print('usages ------- ${responseData['usage']}');
+          // print("This request cost: \$${cost.toStringAsFixed(4)}");
+          // print('usages ------- ${responseData['usage']}');
 
           final remainingMoney = 4.99 - cost;
-          print('remainingMoney ----- $remainingMoney');
+          // print('remainingMoney ----- $remainingMoney');
 
           remainingToken = ((remainingMoney * 2000000) / 4.99).toDouble();
-          print('remainingToken ------ $remainingToken');
+          // print('remainingToken ------ $remainingToken');
 
           String answer = responseData['output'][0]['content'][0]['text'];
 
@@ -1728,9 +1738,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
     }
 
     bool isGradiant = sendByme;
-    print('iaGradiannt >>>> $isGradiant');
-    print('message >>> $message');
-    print('imagePath >>> $imagePath');
+    // print('iaGradiannt >>>> $isGradiant');
+    // print('message >>> $message');
+    // print('imagePath >>> $imagePath');
 
     return Padding(
       padding: EdgeInsets.only(bottom: isGradiant ? 10 : 10.0),
@@ -1765,134 +1775,124 @@ If any information is not visible or unclear in the image, mark it as "Not found
                         )
                         : BoxDecoration(),
                 child:
-                    (getData && message == "ABC")
+                  !_isAlreadyRunning
+                    ? (getData && message == "ABC")
                         ? Padding(
-                          padding: const EdgeInsets.all(5.0),
-                          child: Column(
-                            crossAxisAlignment:
-                                isGradiant
-                                    ? CrossAxisAlignment.end
-                                    : CrossAxisAlignment.start,
-                            children: [
-                              Shimmer.fromColors(
-                                baseColor: Colors.grey.withValues(alpha: 0.3),
-                                highlightColor: AppColor.white,
-                                child: appText(
-                                  title: 'Analyze Information',
-                                  color: AppColor.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                        : Padding(
-                          padding: EdgeInsets.only(
-                            top: 10,
-                            bottom: isGradiant ? 10 : 0,
-                            left:
-                                isGradiant
-                                    ? 10
-                                    : message.startsWith('<')
-                                    ? 0
-                                    : 10,
-                            right: isGradiant ? 10 : 0,
-                          ),
-                          child: Column(
-                            crossAxisAlignment:
-                                isGradiant
-                                    ? CrossAxisAlignment.end
-                                    : CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              if (imagePath != null && imagePath.isNotEmpty)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.file(
-                                    File(imagePath),
-                                    width: 200,
-                                    height: 200,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) => appText(
-                                          title: "Failed to load image",
-                                          color: AppColor.white,
-                                        ),
-                                  ),
-                                ),
-                              if (imagePath != null && imagePath.isNotEmpty)
-                                8.toDouble().hs,
-                              if (isGradiant)
-                                appText(
-                                  title: message,
-                                  textAlign: TextAlign.start,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 100,
-                                  height: 1.5,
-                                  fontSize: Utility.fontSize,
-                                  color: AppColor.white,
-                                )
-                              else if (message.startsWith('<'))
-                                HtmlWidget(
-                                  message,
-                                  textStyle: TextStyle(
+                            padding: const EdgeInsets.all(5.0),
+                            child: Column(
+                              crossAxisAlignment:
+                                  isGradiant ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                              children: [
+                                Shimmer.fromColors(
+                                  baseColor: Colors.grey.withValues(alpha: 0.3),
+                                  highlightColor: AppColor.white,
+                                  child: appText(
+                                    title: 'Analyze Information',
                                     color: AppColor.white,
-                                    fontFamily: 'gelasio',
-                                    decorationColor: AppColor.white,
-                                  ),
-                                  enableCaching: false,
-                                  onTapUrl: (url) async {
-                                    if (kDebugMode) {
-                                      print('onLinkTap $url');
-                                    }
-                                    return await launchUrl(Uri.parse(url));
-                                  },
-                                )
-                              else
-                                Selectable(
-                                  showSelection: true,
-                                  selectWordOnDoubleTap: true,
-                                  selectWordOnLongPress: true,
-                                  selectionColor: Colors.blue.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  child: MarkdownBody(
-                                    data: message,
-                                    softLineBreak: true,
-                                    extensionSet: md.ExtensionSet(
-                                      md.ExtensionSet.gitHubWeb.blockSyntaxes,
-                                      <md.InlineSyntax>[
-                                        md.EmojiSyntax(),
-                                        ...md
-                                            .ExtensionSet
-                                            .gitHubWeb
-                                            .inlineSyntaxes,
-                                      ],
-                                    ),
-                                    styleSheet: MarkdownStyleSheet.fromTheme(
-                                      Theme.of(context),
-                                    ).copyWith(
-                                      p: TextStyle(
-                                        fontSize: 14,
-                                        color: AppColor.white,
-                                        fontFamily: 'gelasio',
-                                      ),
-                                      a: TextStyle(
-                                        fontSize: 14,
-                                        color: AppColor.white,
-                                        fontFamily: 'gelasio',
-                                        decoration: TextDecoration.underline,
-                                        fontWeight: FontWeight.w400,
-                                        decorationColor: AppColor.white
-                                            .withValues(alpha: 0.5),
-                                      ),
-                                    ),
-                                    shrinkWrap: true,
-                                    selectable: false,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
+                              ],
+                            ),
+                          )
+                        : Padding(
+                            padding: EdgeInsets.only(
+                              top: 10,
+                              bottom: isGradiant ? 10 : 0,
+                              left: isGradiant
+                                  ? 10
+                                  : message.startsWith('<')
+                                      ? 0
+                                      : 10,
+                              right: isGradiant ? 10 : 0,
+                            ),
+                            child: Column(
+                              crossAxisAlignment:
+                                  isGradiant ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                if (imagePath != null && imagePath.isNotEmpty)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.file(
+                                      File(imagePath),
+                                      width: 200,
+                                      height: 200,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => appText(
+                                        title: "Failed to load image",
+                                        color: AppColor.white,
+                                      ),
+                                    ),
+                                  ),
+                                if (imagePath != null && imagePath.isNotEmpty) 8.toDouble().hs,
+                                if (isGradiant)
+                                  appText(
+                                    title: message,
+                                    textAlign: TextAlign.start,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 100,
+                                    height: 1.5,
+                                    fontSize: Utility.fontSize,
+                                    color: AppColor.white,
+                                  )
+                                else if (message.startsWith('<'))
+                                  HtmlWidget(
+                                    message,
+                                    textStyle: TextStyle(
+                                      color: AppColor.white,
+                                      fontFamily: 'gelasio',
+                                      decorationColor: AppColor.white,
+                                    ),
+                                    enableCaching: false,
+                                    onTapUrl: (url) async {
+                                      if (kDebugMode) {
+                                        // print('onLinkTap $url');
+                                      }
+                                      return await launchUrl(Uri.parse(url));
+                                    },
+                                  )
+                                else
+                                  Selectable(
+                                    showSelection: true,
+                                    selectWordOnDoubleTap: true,
+                                    selectWordOnLongPress: true,
+                                    selectionColor: Colors.blue.withValues(alpha: 0.3),
+                                    child: MarkdownBody(
+                                      data: message,
+                                      softLineBreak: true,
+                                      extensionSet: md.ExtensionSet(
+                                        md.ExtensionSet.gitHubWeb.blockSyntaxes,
+                                        <md.InlineSyntax>[
+                                          md.EmojiSyntax(),
+                                          ...md.ExtensionSet.gitHubWeb.inlineSyntaxes,
+                                        ],
+                                      ),
+                                      styleSheet: MarkdownStyleSheet.fromTheme(
+                                        Theme.of(context),
+                                      ).copyWith(
+                                        p: TextStyle(
+                                          fontSize: 14,
+                                          color: AppColor.white,
+                                          fontFamily: 'gelasio',
+                                        ),
+                                        a: TextStyle(
+                                          fontSize: 14,
+                                          color: AppColor.white,
+                                          fontFamily: 'gelasio',
+                                          decoration: TextDecoration.underline,
+                                          fontWeight: FontWeight.w400,
+                                          decorationColor:
+                                              AppColor.white.withValues(alpha: 0.5),
+                                        ),
+                                      ),
+                                      shrinkWrap: true,
+                                      selectable: false,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          )
+                    : const SizedBox.shrink(),
               ),
               isGradiant
                   ? Row(
@@ -1987,7 +1987,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
         // .replaceAllMapped(RegExp(r'(\n\s*){,2}'), (_) => '\n')
         .replaceAllMapped(RegExp(r'(\n\s*){3,}'), (_) => '\n\n');
     if (kDebugMode) {
-      print('bufferString $bufferString');
+      // print('bufferString $bufferString');
     }
     return bufferString;
   }
