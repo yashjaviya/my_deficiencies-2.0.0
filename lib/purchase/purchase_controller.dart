@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -12,6 +13,8 @@ import 'package:my_deficiencies/common/dialog/progress_dialog.dart';
 import 'package:my_deficiencies/firebase/realtime_database.dart';
 import 'package:my_deficiencies/firebase/remote_config.dart';
 import 'package:my_deficiencies/model/sku_model.dart';
+import 'package:my_deficiencies/model/user_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 ProgressDialog dialogBuilder = ProgressDialog();
 
@@ -214,11 +217,57 @@ class PurchaseController extends GetxController {
     dialogHide();
     isSubscribe = true;
     update();
+
     if (!isStart && purchaseDetails.status == PurchaseStatus.restored) {
       flutterToastBottomGreen("Purchase Restore Successfully");
     }
-    if(Get.currentRoute == '/PremiumScreen') {
+    if (Get.currentRoute == '/PremiumScreen') {
       Get.back();
+    }
+
+    /// 🔑 Update token based on product
+    final loginUser = FirebaseAuth.instance.currentUser;
+    if (loginUser == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final String? userJson = prefs.getString("userData");
+
+    if (userJson != null) {
+      final user = UserModel.fromJson(userJson);
+
+      final int currentTokens = user.remainingToken;
+
+      // Decide tokens based on purchase productID
+      int addTokens = 0;
+      double subPlan = 4.99;
+      if (purchaseDetails.productID == "weekly4.99" || purchaseDetails.productID == 'weekly') {
+        addTokens = 2;
+      } else if (purchaseDetails.productID == "monthly49.99" || purchaseDetails.productID == 'monthly') {
+        addTokens = 100;
+        subPlan = 49.99;
+      } else if (purchaseDetails.productID == "yearly499.99") {
+        addTokens = 1310;
+        subPlan = 499.99;
+      }
+
+      print('-------------------------------');
+      print('-------------------------------');
+      print('------------------------------- remainingToken ${currentTokens + addTokens}');
+      print('-------------------------------');
+      print('-------------------------------');
+
+      // Update Firestore
+      await UserModel.update(loginUser.uid, {
+        "remainingToken": currentTokens + addTokens,
+        "isSubscribe": true,
+        "subscriptionPlan": subPlan,
+      });
+
+      final Map<String, dynamic> userMap = jsonDecode(userJson);
+      userMap["remainingToken"] = currentTokens + addTokens;
+      userMap["isSubscribe"] = true;
+      userMap["subscriptionPlan"] = subPlan;
+      await prefs.setString("userData", jsonEncode(userMap));
     }
   }
 
@@ -233,7 +282,10 @@ class PurchaseController extends GetxController {
     try {
       late PurchaseParam purchaseParam;
 
-
+      print('productDetails ----- ${productDetails.id}, '
+        'title: ${productDetails.title}, '
+        'description: ${productDetails.description}, '
+        'price: ${productDetails.price}');
       {
         purchaseParam = PurchaseParam(
           productDetails: productDetails,

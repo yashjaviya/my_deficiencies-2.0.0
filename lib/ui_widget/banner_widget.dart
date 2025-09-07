@@ -22,7 +22,7 @@ class _RewardedAdWidgetState extends State<RewardedAdWidget> {
 
   void _loadAd() {
   RewardedAd.load(
-    adUnitId: 'ca-app-pub-3940256099942544/5224354917',
+    adUnitId: 'ca-app-pub-3051873875639589/4683965282',
     request: const AdRequest(),
     rewardedAdLoadCallback: RewardedAdLoadCallback(
       onAdLoaded: (ad) {

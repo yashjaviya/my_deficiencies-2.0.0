@@ -287,9 +287,9 @@ class _HomeScreenState extends State<HomeScreen> {
           centerTitle: false,
           actions: [
             GetBuilder<PurchaseController>(builder: (controller) {
-              if (controller.isSubscribe) {
-                return Container();
-              }
+              // if (controller.isSubscribe) {
+              //   return Container();
+              // }
               return IconButton(
                   onPressed: () {
                     Get.to(PremiumScreen());

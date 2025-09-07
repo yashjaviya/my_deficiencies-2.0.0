@@ -142,6 +142,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
       progressDialog.close();
       Fluttertoast.showToast(msg: 'Signed in with Apple');
+
+      String? email = appleCredential.email ?? userCredential.user?.email;
+
+      // If email is null, fallback to stored email from Firestore
+      if (email != null) {
+        final user = UserModel(
+          id: userCredential.user?.uid ?? "", 
+          email: email, 
+          remainingToken: 0,
+          isReferenceUser: false,
+          isSubscribe: false,
+          subscriptionToken: 0,
+        );
+        await UserModel.saveUser(user);
+      }
+
       Get.dialog(
         name: '/DialogWidgetSuccessfully',
         DialogWidget(

@@ -22,7 +22,7 @@ Future<void> main() async {
 
   // 🧠 Remote Config & Purchase Controller
   await Get.put(RemoteConfig()).init();
-  // Get.put(PurchaseController()).fetchSkuDetail();
+  Get.put(PurchaseController()).fetchSkuDetail();
 
   // 💰 Initialize Google Mobile Ads SDK
   await MobileAds.instance.initialize();

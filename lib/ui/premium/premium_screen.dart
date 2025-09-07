@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -13,6 +14,7 @@ import 'package:my_deficiencies/firebase/remote_config.dart';
 import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
 import 'package:my_deficiencies/model/sku_model.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
+import 'package:my_deficiencies/ui/login/login_screen.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -25,7 +27,7 @@ class PremiumScreen extends StatefulWidget {
 
 class _PremiumScreenState extends State<PremiumScreen> {
 
-  int selectedIndex = 0;
+  int selectedIndex = 1;
 
   List<SkuModel> skuList = [];
   RemoteConfig remoteConfig = Get.put(RemoteConfig());
@@ -278,30 +280,31 @@ class _PremiumScreenState extends State<PremiumScreen> {
                                   );
                                 },
                               ),
+                             
                               8.toDouble().hs,
                               GestureDetector(
                                 onTap: () {
-                                  /*if(FirebaseAuth.instance.currentUser == null) {
-                                    Get.to(LoginScreen())!.then(
-                                      (value) {
-                                        SkuModel skuModel = purchaseController.skuModelList[selectedIndex];
-                                        List<ProductDetails> productDetails = purchaseController.productDetails.where((element) => element.id == skuModel.sku,).toList();
-                                        ProductDetails? productDetails = weekly.isNotEmpty ? weekly.first : null;
-                                          if(selectedIndex == 0) {
-                                            productDetails = weekly.isNotEmpty ? weekly.first : null;
-                                          } else if(selectedIndex == 0) {
-                                            productDetails = monthly.isNotEmpty ? monthly.first : null;
-                                          } else if(selectedIndex == 0) {
-                                            productDetails = yearly.isNotEmpty ? yearly.first : null;
-                                          }
-                                        if(productDetails.isNotEmpty) {
-                                          purchaseController.onCLick(productDetails: productDetails.first);
-                                        } else {
-                                          flutterToastCenter('Something is wrong');
-                                        }
-                                      },
-                                    );
-                                  } else {
+                                  // if(FirebaseAuth.instance.currentUser == null) {
+                                  //   Get.to(LoginScreen())!.then(
+                                  //     (value) {
+                                  //       SkuModel skuModel = purchaseController.skuModelList[selectedIndex];
+                                  //       List<ProductDetails> productDetails = purchaseController.productDetails.where((element) => element.id == skuModel.sku,).toList();
+                                  //       ProductDetails? productDetails = weekly.isNotEmpty ? weekly.first : null;
+                                  //         if(selectedIndex == 0) {
+                                  //           productDetails = weekly.isNotEmpty ? weekly.first : null;
+                                  //         } else if(selectedIndex == 0) {
+                                  //           productDetails = monthly.isNotEmpty ? monthly.first : null;
+                                  //         } else if(selectedIndex == 0) {
+                                  //           productDetails = yearly.isNotEmpty ? yearly.first : null;
+                                  //         }
+                                  //       if(productDetails.isNotEmpty) {
+                                  //         purchaseController.onCLick(productDetails: productDetails.first);
+                                  //       } else {
+                                  //         flutterToastCenter('Something is wrong');
+                                  //       }
+                                  //     },
+                                  //   );
+                                  // } else {
                                     SkuModel skuModel = purchaseController.skuModelList[selectedIndex];
                                     List<ProductDetails> productDetails = purchaseController.productDetails.where((element) => element.id == skuModel.sku,).toList();
                                     if(productDetails.isNotEmpty) {
@@ -309,7 +312,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                                     } else {
                                       flutterToastCenter('Something is wrong');
                                     }
-                                  } */
+                                  // }
                                   if (purchaseController.skuModelList.isNotEmpty) {
                                     final skuModel = purchaseController.skuModelList[selectedIndex];
                                     final productDetails = purchaseController.productDetails

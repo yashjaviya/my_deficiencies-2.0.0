@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:clipboard/clipboard.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -20,6 +21,7 @@ import 'package:my_deficiencies/data_base/chat_list_data_base.dart';
 import 'package:my_deficiencies/data_base/prompt_data_base.dart' hide DBHelper;
 import 'package:my_deficiencies/firebase/remote_config.dart';
 import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
+import 'package:my_deficiencies/model/reference_model.dart';
 import 'package:my_deficiencies/model/user_model.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
 import 'package:my_deficiencies/ui/premium/premium_screen.dart';
@@ -83,13 +85,16 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final mySoundController = Get.put(MySoundController());
   final purchaseController = Get.put(PurchaseController());
   final controller = Get.put(Controller());
+  final loginUser = FirebaseAuth.instance.currentUser;
+
+  int freePlanCurrentIndex = 1;
 
   UserModel? currentUser;
 
   bool isSubscribe = false;
   bool isReferenceUser = false;
   double subscriptionPlan = 4.99;
-  double remainingToken = 2500000;
+  int remainingToken = 0;
   num inputToken = 0;
   num outputToken = 0;
 
@@ -144,11 +149,33 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       // ✅ Now you can use user object
       // print("Fetched User: ${user.email}, Token: ${user.remainingToken}");
 
+      ReferenceModel? ref;
+      bool isTokenActive = false;
+      final now = DateTime.now();
+      if (user.referenceId != null && user.referenceId != '')  {
+        ref = await ReferenceModel.getById(user.referenceId ?? '');
+
+        if (ref!.isActive && ref.expiredDate.isAfter(now)) {
+          isTokenActive = true;
+        }
+      }
+      
+      if (!isTokenActive && user.isReferenceUser == true && loginUser!.uid != null) {
+        await UserModel.update(loginUser!.uid, {
+          "isReferenceUser": false,
+          "referenceId": ''
+        });
+      }
+
+      final checkIsSubscribe = user.isSubscribe ?? false;
+
+      print('checkIsSubscribe ------ $checkIsSubscribe');
+
       setState(() {
-        isSubscribe = user.isSubscribe ?? false;
+        isSubscribe = checkIsSubscribe && user.remainingToken != 0 ? true : false;
         remainingToken = user.remainingToken;
         subscriptionPlan = user.subscriptionPlan ?? 0;
-        isReferenceUser = user.isReferenceUser ?? false;
+        isReferenceUser = isTokenActive;
         currentUser = user; // define `UserModel? currentUser;` in your State class
       });
     } else {
@@ -371,95 +398,69 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                         CrossAxisAlignment.start,
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
-                                      isQuestion1
-                                          ? Container()
-                                          : Row(
-                                            children: [
-                                              GestureDetector(
-                                                onTap: () {
-                                                  Utility
-                                                      .promptController
-                                                      .text = question1;
-                                                  sendMessage();
-                                                  setState(() {});
-                                                },
-                                                child: Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                    vertical: 10,
-                                                    horizontal: 20,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: AppColor.c303033,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          20.0,
-                                                        ),
-                                                    border: Border.all(
-                                                      color:
-                                                          AppColor.borderColor,
-                                                    ),
-                                                  ),
-                                                  child: appText(
-                                                    title: displayQuestion1,
-                                                    color: AppColor.white,
+                                      if (isSubscribe || isReferenceUser)
+                                        Row(
+                                          children: [
+                                            GestureDetector(
+                                              onTap: () {
+                                                Utility.promptController.text = question1;
+                                                sendMessage();
+                                                setState(() {});
+                                              },
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(
+                                                  vertical: 10,
+                                                  horizontal: 20,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: AppColor.c303033,
+                                                  borderRadius: BorderRadius.circular(20.0),
+                                                  border: Border.all(
+                                                    color: AppColor.borderColor,
                                                   ),
                                                 ),
+                                                child: appText(
+                                                  title: displayQuestion1,
+                                                  color: AppColor.white,
+                                                ),
                                               ),
-                                              10.toDouble().ws,
-                                            ],
-                                          ),
-                                      GestureDetector(
-                                        onTap: () async {
-                                          Uri uri = Uri.parse(
-                                            'https://stan.store/ScottEBurgess/p/15-min-discovery-call-5hmsx4tf',
-                                          );
-                                          if (await canLaunchUrl(uri)) {
-                                            launchUrl(uri);
-                                          }
-                                        },
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 10,
-                                            horizontal: 20,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColor.c303033,
-                                            borderRadius: BorderRadius.circular(
-                                              20.0,
                                             ),
-                                            border: Border.all(
-                                              color: AppColor.borderColor,
+                                            10.toDouble().ws,
+                                          ],
+                                        ),
+
+                                      // Show this only when subscribed + reference user
+                                      if (isSubscribe || isReferenceUser)
+                                        GestureDetector(
+                                          onTap: () async {
+                                            Uri uri = Uri.parse(
+                                              'https://stan.store/ScottEBurgess/p/15-min-discovery-call-5hmsx4tf',
+                                            );
+                                            if (await canLaunchUrl(uri)) {
+                                              launchUrl(uri);
+                                            }
+                                          },
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              vertical: 10,
+                                              horizontal: 20,
                                             ),
-                                          ),
-                                          child: appText(
-                                            title:
-                                                'Would you like to schedule a\nconsultative 15min discovery call?',
-                                            color: AppColor.white,
-                                            textAlign: TextAlign.left,
+                                            decoration: BoxDecoration(
+                                              color: AppColor.c303033,
+                                              borderRadius: BorderRadius.circular(20.0),
+                                              border: Border.all(
+                                                color: AppColor.borderColor,
+                                              ),
+                                            ),
+                                            child: appText(
+                                              title:
+                                                  'Would you like to schedule a\nconsultative 15min discovery call?',
+                                              color: AppColor.white,
+                                              textAlign: TextAlign.left,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      // isQuestion2 ? Container() : GestureDetector(
-                                      //    onTap: () {
-                                      //      Utility.promptController.text = question2;
-                                      //      sendMessage();
-                                      //      setState(() {});
-                                      //    },
-                                      //    child: Container(
-                                      //      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                                      //      decoration: BoxDecoration(
-                                      //        color: AppColor.c303033,
-                                      //        borderRadius: BorderRadius.circular(20.0),
-                                      //        border: Border.all(color: AppColor.borderColor),
-                                      //      ),
-                                      //      child: appText(
-                                      //        title: displayQuestion2,
-                                      //        color: AppColor.white,
-                                      //        textAlign: TextAlign.left
-                                      //      ),
-                                      //    ),
-                                      //  ),
-                                    ],
+                                    ]
                                   ),
                                 )
                                 : Container(),
@@ -469,106 +470,108 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                   return Visibility(
                                     visible:
                                         isShowPopup &&
-                                        !purchaseController.isSubscribe,
+                                        !isSubscribe,
                                     child: Column(
                                       children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 10.0,
-                                          ),
-                                          child: InkWell(
-                                            onTap: () {
-                                              Get.to(PremiumScreen())!.then((value) {
-                                                if (purchaseController.isSubscribe) {
-                                                  Utility.promptController.text =
-                                                      Utility.chatHistoryList[Utility.chatHistoryList.length - 2].message!;
-                                                  sendMessage(
-                                                    iId: Utility.chatHistoryList[Utility.chatHistoryList.length - 2].id,
-                                                  );
-                                                }
-                                              });
-                                            },
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: AppColor.containerColor.withValues(alpha: 0.3),
-                                                borderRadius: BorderRadius.circular(30.0),
-                                                border: Border.all(
-                                                  color: AppColor.borderColor,
+                                        if (!isSubscribe && !isReferenceUser)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 10.0,
+                                            ),
+                                            child: InkWell(
+                                              onTap: () {
+                                                Get.to(PremiumScreen())!.then((value) {
+                                                  if (isSubscribe) {
+                                                    Utility.promptController.text =
+                                                        Utility.chatHistoryList[Utility.chatHistoryList.length - 2].message!;
+                                                    sendMessage(
+                                                      iId: Utility.chatHistoryList[Utility.chatHistoryList.length - 2].id,
+                                                    );
+                                                  }
+                                                });
+                                              },
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: AppColor.containerColor.withValues(alpha: 0.3),
+                                                  borderRadius: BorderRadius.circular(30.0),
+                                                  border: Border.all(
+                                                    color: AppColor.borderColor,
+                                                  ),
                                                 ),
-                                              ),
-                                              child: Padding(
-                                                padding: EdgeInsets.symmetric(
-                                                  vertical: lightDarkController.isLight ? 10.0 : 5.0,
-                                                  horizontal: 16.0,
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    ImageWidget(
-                                                      imageUrl: SvgAssetsData.icPremium,
-                                                      color: AppColor.white,
-                                                    ),
-                                                    10.toDouble().ws,
-                                                    appText(
-                                                      title: "For Full Report - Go Premium".tr,
-                                                      color: AppColor.white,
-                                                      fontWeight: FontWeight.w300,
-                                                      fontSize: 16,
-                                                      textAlign: TextAlign.center,
-                                                    ),
-                                                  ],
+                                                child: Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                    vertical: lightDarkController.isLight ? 10.0 : 5.0,
+                                                    horizontal: 16.0,
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      ImageWidget(
+                                                        imageUrl: SvgAssetsData.icPremium,
+                                                        color: AppColor.white,
+                                                      ),
+                                                      10.toDouble().ws,
+                                                      appText(
+                                                        title: "For Full Report - Go Premium".tr,
+                                                        color: AppColor.white,
+                                                        fontWeight: FontWeight.w300,
+                                                        fontSize: 16,
+                                                        textAlign: TextAlign.center,
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                        ),
 
                                         const SizedBox(height: 12), // spacing between buttons
 
-                                        // 🔹 New Button (Full Report with Ads)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 10.0,
-                                          ),
-                                          child: InkWell(
-                                            onTap: () async {
-                                              // bool adWatched = await showRewardedAd();
-                                              // if (adWatched) {
-                                                await showNextVersion();
-                                                // setState(() {}); // refresh UI
-                                              // }
-                                            },
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: AppColor.containerColor.withValues(alpha: 0.3),
-                                                borderRadius: BorderRadius.circular(30.0),
-                                                border: Border.all(
-                                                  color: AppColor.borderColor,
+                                        if (freePlanCurrentIndex < 4 && !isSubscribe && !isReferenceUser)
+                                          // 🔹 New Button (Full Report with Ads)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 10.0,
+                                            ),
+                                            child: InkWell(
+                                              onTap: () async {
+                                                // bool adWatched = await showRewardedAd();
+                                                // if (adWatched) {
+                                                  await showNextVersion();
+                                                  // setState(() {}); // refresh UI
+                                                // }
+                                              },
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: AppColor.containerColor.withValues(alpha: 0.3),
+                                                  borderRadius: BorderRadius.circular(30.0),
+                                                  border: Border.all(
+                                                    color: AppColor.borderColor,
+                                                  ),
                                                 ),
-                                              ),
-                                              child: Padding(
-                                                padding: EdgeInsets.symmetric(
-                                                  vertical: lightDarkController.isLight ? 10.0 : 5.0,
-                                                  horizontal: 16.0,
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(Icons.play_circle_fill, color: AppColor.white),
-                                                    10.toDouble().ws,
-                                                    appText(
-                                                      title: "Full Report (with Ads)".tr,
-                                                      color: AppColor.white,
-                                                      fontWeight: FontWeight.w300,
-                                                      fontSize: 16,
-                                                      textAlign: TextAlign.center,
-                                                    ),
-                                                  ],
+                                                child: Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                    vertical: lightDarkController.isLight ? 10.0 : 5.0,
+                                                    horizontal: 16.0,
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.play_circle_fill, color: AppColor.white),
+                                                      10.toDouble().ws,
+                                                      appText(
+                                                        title: "Full Report (with Ads)".tr,
+                                                        color: AppColor.white,
+                                                        fontWeight: FontWeight.w300,
+                                                        fontSize: 16,
+                                                        textAlign: TextAlign.center,
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                        ),
                                       ],
                                     )
                                   );
@@ -705,7 +708,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                 Expanded(
                                   child: appText(
                                     title:
-                                        "Type Medications / Vitamins\nseparated by commas",
+                                      "Type Medications / Vitamins\nseparated by commas",
                                     color: AppColor.white,
                                     fontWeight: FontWeight.w300,
                                     fontSize: 16,
@@ -791,7 +794,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                     if (!getData) {
                                       sendMessage();
                                     } else {
-                                      flutterToastCenter("Wait Few Seconds...");
+                                      flutterToastCenter("Analyzing...");
                                     }
                                   },
                                   buildCounter: (
@@ -885,7 +888,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                               child: Icon(
                                                 Icons.attach_file_rounded,
                                                 size: 24,
-                                                color: AppColor.borderColor,
+                                                color: AppColor.white,
                                               ),
                                             ),
                                           ),
@@ -898,7 +901,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                                 sendMessage();
                                               } else {
                                                 flutterToastCenter(
-                                                  "Wait a few seconds...",
+                                                  "Analyzing...",
                                                 );
                                               }
                                             },
@@ -916,7 +919,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                               child: Icon(
                                                 Icons.send_rounded,
                                                 size: 24,
-                                                color: AppColor.borderColor,
+                                                color: AppColor.white,
                                               ),
                                             ),
                                           ),
@@ -1003,9 +1006,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
         // print('content ----- $content');
 
         // print('usage ----- ${responseData['usage']}');
-        var usagesToken = responseData['usage'];
-        inputToken += usagesToken['prompt_tokens'];
-        outputToken += usagesToken['completion_tokens'];
+        // var usagesToken = responseData['usage'];
+        // inputToken += usagesToken['prompt_tokens'];
+        // outputToken += usagesToken['completion_tokens'];
 
         // print('inputToken --- 1 --- $inputToken');
         // print('outputToken --- 1 --- $outputToken');
@@ -1049,11 +1052,13 @@ If any information is not visible or unclear in the image, mark it as "Not found
 
   String _formatExtractedText(Map<String, String> data) {
     final buffer = StringBuffer();
-    if (data.containsKey('Medicine'))
+    if (data.containsKey('Medicine')) {
       buffer.writeln('Medicine: ${data['Medicine']}');
+    }
     if (data.containsKey('Form')) buffer.writeln('Form: ${data['Form']}');
-    if (data.containsKey('Active Ingredients'))
+    if (data.containsKey('Active Ingredients')) {
       buffer.writeln('Active Ingredients: ${data['Active Ingredients']}');
+    }
     if (data.containsKey('Dosage')) buffer.writeln('Dosage: ${data['Dosage']}');
     return buffer.toString().trim();
   }
@@ -1067,10 +1072,12 @@ If any information is not visible or unclear in the image, mark it as "Not found
       return;
     }
 
-    // print('this is show next version function call');
-
     int currentIndex = await getCurrentIndex();
     int nextIndex = currentIndex + 1;
+
+    setState(() {
+      freePlanCurrentIndex = nextIndex;
+    });
 
     // Check if nextIndex is within valid range (1 to 4)
     if (nextIndex > 4) {
@@ -1079,7 +1086,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
     }
 
     String nextKey = "free_prompt_version_2_0_$nextIndex";
-    print('nextKey >>>> $nextKey');
+    if (kDebugMode) {
+      // print('nextKey >>>> $nextKey');
+    }
 
     final responseText = remoteConfig.getString(nextKey);
 
@@ -1094,35 +1103,17 @@ If any information is not visible or unclear in the image, mark it as "Not found
     // 🔹 Add shimmer placeholder
     setState(() {
       getData = true;
-      Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
-
-      print('-----------');
-
-      Utility.chatHistoryList.add(
-        ChatListHistoryModel(
-          id: Utility.chatHistoryList.isEmpty ? 1 : Utility.chatHistoryList.last.id + 1,
-          message: "ABC", // Placeholder
-          currentDateAndTime: DateTime.now().toString(),
-          isSender: false,
-          isAnimation: false,
-          isGpt4: false,
-          isDisplayButton: nextIndex < 4,
-        ),
-      );
-      // print('Added placeholder for $nextKey');
       scrollController.jumpTo(scrollController.position.maxScrollExtent);
     });
 
     // 🔹 Load & Show Rewarded Ad
     RewardedAd.load(
-      adUnitId: 'ca-app-pub-3940256099942544/5224354917', // Test ad unit
+      adUnitId: 'ca-app-pub-3051873875639589/4683965282', // Test ad unit
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
           ad.show(
             onUserEarnedReward: (AdWithoutView ad, RewardItem reward) async {
-              // print("Reward earned! Now fetching GPT response for $nextKey...");
-
               // 🔹 Build full conversation context
               List<Map<String, dynamic>> messages = [];
               for (var chat in Utility.chatHistoryList) {
@@ -1162,18 +1153,34 @@ If any information is not visible or unclear in the image, mark it as "Not found
                   String answer = responseData['output'][0]['content'][0]['text'];
 
                   setState(() {
-                    Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
-                    Utility.chatHistoryList.add(
-                      ChatListHistoryModel(
-                        id: Utility.chatHistoryList.isEmpty ? 1 : Utility.chatHistoryList.last.id + 1,
-                        message: answer,
-                        currentDateAndTime: DateTime.now().toString(),
-                        isSender: false,
-                        isAnimation: false,
-                        isGpt4: false,
-                        isDisplayButton: nextIndex < 4,
-                      ),
-                    );
+                    if (Utility.chatHistoryList.isNotEmpty) {
+                      // 🔹 Append new response to existing last message
+                      String? oldMessage = Utility.chatHistoryList.last.message;
+                      Utility.chatHistoryList[Utility.chatHistoryList.length - 1] =
+                          ChatListHistoryModel(
+                            id: Utility.chatHistoryList.last.id,
+                            message: "$oldMessage $answer", // append instead of replace
+                            currentDateAndTime: DateTime.now().toString(),
+                            isSender: false,
+                            isAnimation: false,
+                            isGpt4: false,
+                            isDisplayButton: nextIndex < 4,
+                          );
+                    } else {
+                      // If empty, just add as new
+                      Utility.chatHistoryList.add(
+                        ChatListHistoryModel(
+                          id: 1,
+                          message: answer,
+                          currentDateAndTime: DateTime.now().toString(),
+                          isSender: false,
+                          isAnimation: false,
+                          isGpt4: false,
+                          isDisplayButton: nextIndex < 4,
+                        ),
+                      );
+                    }
+
                     getData = false;
                     scrollController.jumpTo(scrollController.position.maxScrollExtent);
                   });
@@ -1190,17 +1197,17 @@ If any information is not visible or unclear in the image, mark it as "Not found
                   await setCurrentIndex(nextIndex);
                 } else {
                   setState(() {
-                    Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
                     getData = false;
                   });
                   flutterToastCenter("Server Timed Out for version $nextIndex. Please try again.");
                 }
               } catch (e) {
                 setState(() {
-                  Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
                   getData = false;
                 });
-                print("Error in showNextVersion for $nextKey: $e");
+                if (kDebugMode) {
+                  print("Error in showNextVersion for $nextKey: $e");
+                }
                 flutterToastCenter("Something went wrong for version $nextIndex. Please try again.");
               }
             },
@@ -1208,17 +1215,16 @@ If any information is not visible or unclear in the image, mark it as "Not found
         },
         onAdFailedToLoad: (error) {
           setState(() {
-            Utility.chatHistoryList.removeWhere((item) => item.message == "ABC");
             getData = false;
           });
-          print("Rewarded ad failed for $nextKey: $error");
+          if (kDebugMode) {
+            print("Rewarded ad failed for $nextKey: $error");
+          }
           flutterToastCenter("Ad failed to load for version $nextIndex. Please try again.");
         },
       ),
     );
   }
-
-
 
   static Future<int> getCurrentIndex() async {
     final prefs = await SharedPreferences.getInstance();
@@ -1238,6 +1244,10 @@ If any information is not visible or unclear in the image, mark it as "Not found
     // }
 
     await setCurrentIndex(1);
+
+    setState(() {
+      freePlanCurrentIndex = 1;
+    });
 
     FocusManager.instance.primaryFocus?.unfocus();
     if (Utility.promptController.text != "" ||
@@ -1278,7 +1288,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
       Map<String, String>? extractedText;
 
       // print('isReload >>>> ${isReload}');
-      // print('_pickedFile >>>> ${_pickedFile}');
+      // print('_pickedFile >>>> $_pickedFile');
       // print(
         // 'is that condition is true........ >>>> ${!isReload && _pickedFile != null}',
       // );
@@ -1308,6 +1318,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
             initialMedicineName = extractedText['Active Ingredients'];
           }
 
+          // ignore: no_leading_underscores_for_local_identifiers
           TextEditingController _medicineController = TextEditingController(
             text: initialMedicineName,
           );
@@ -1315,10 +1326,11 @@ If any information is not visible or unclear in the image, mark it as "Not found
           // print('Medicine name. >>>>>>> ${_medicineController}');
 
           bool? userConfirmed = await showDialog<bool>(
+            // ignore: use_build_context_synchronously
             context: context,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: const Text("Confirm Medication Name"),
+                title: const Text("Confirm Synthetics Name"),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1476,7 +1488,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
           // print('isQuestions $isQuestions1');
         }
 
-        print('Utility.chatHistoryList[i].message ----- ${Utility.chatHistoryList[i].message}');
+        if (kDebugMode) {
+          // print('Utility.chatHistoryList[i].message ----- ${Utility.chatHistoryList[i].message}');
+        }
 
         if (Utility.chatHistoryList[i].message != '' &&
             Utility.chatHistoryList[i].message != 'ABC') {
@@ -1487,7 +1501,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
                     ? remoteConfig.getString('prompt_view_questions_2_0_0')
                     : isQuestions2
                         ? remoteConfig.getString('prompt_view_questions2_2_0_0')
-                        : (purchaseController.isSubscribe || isReferenceUser
+                        : (isSubscribe || isReferenceUser
                             ? remoteConfig.getString('prompt_view_premium_version_2_0_0')
                             : remoteConfig.getString('free_prompt_version_2_0_1'))}, not html format',
             'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant',
@@ -1511,7 +1525,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
                     ? remoteConfig.getString('prompt_view_questions_2_0_0')
                     : isQuestions2
                     ? remoteConfig.getString('prompt_view_questions2_2_0_0')
-                    : (purchaseController.isSubscribe || isReferenceUser
+                    : (isSubscribe || isReferenceUser
                         ? remoteConfig.getString('prompt_view_premium_version_2_0_0')
                         : remoteConfig.getString('free_prompt_version_2_0_1'))}, not html format',
             'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant',
@@ -1533,13 +1547,13 @@ If any information is not visible or unclear in the image, mark it as "Not found
         final body = jsonEncode({
           'model': 'gpt-4.1',
           'instructions':
-              purchaseController.isSubscribe || isReferenceUser
+              isSubscribe || isReferenceUser
                   ? remoteConfig.getString('premium_prompt_version_2_0_0')
                   : '${remoteConfig.getString('free_prompt_version_2_0_1')} not html format',
           'input': prompt,
         });
 
-        final count = await TokenizerService().countTokens(jsonEncode(body), model: "gpt-4");
+        // final count = await TokenizerService().countTokens(jsonEncode(body), model: "gpt-4");
         // print("Token count: $count");
 
         // if (remainingToken <= count && !isReferenceUser) {
@@ -1549,37 +1563,58 @@ If any information is not visible or unclear in the image, mark it as "Not found
 
         // body['max_tokens'] = remainingToken - count;
 
-        print('111111111111 $prompt');
+        if (kDebugMode) {
+          // print('111111111111 $prompt');
+        }
 
         final response = await http.post(url, headers: headers, body: body);
         if (kDebugMode) {
           // print('response ${response.body}');
         }
 
-        print('response >>>> ${jsonDecode(response.body)}');
+        if (kDebugMode) {
+          // print('response >>>> ${jsonDecode(response.body)}');
+        }
 
         if (response.statusCode == 200) {
           var responseData = jsonDecode(response.body);
 
-          double calcCost(int inputTokens, int outputTokens) {
-            // gpt-4.1 rates
-            const double inputRate = 2.0 / 1000000;  // $2 per 1M
-            const double outputRate = 8.0 / 1000000; // $8 per 1M
+          // double calcCost(int inputTokens, int outputTokens) {
+          //   // gpt-4.1 rates
+          //   const double inputRate = 2.0 / 1000000;  // $2 per 1M
+          //   const double outputRate = 8.0 / 1000000; // $8 per 1M
 
-            return (inputTokens * inputRate) + (outputTokens * outputRate);
-          }
+          //   return (inputTokens * inputRate) + (outputTokens * outputRate);
+          // }
 
-          final usages = responseData['usage'];
+          // final usages = responseData['usage'];
 
-          final cost = calcCost(usages['input_tokens'], usages['output_tokens']);
+          // final cost = calcCost(usages['input_tokens'], usages['output_tokens']);
           // print("This request cost: \$${cost.toStringAsFixed(4)}");
           // print('usages ------- ${responseData['usage']}');
 
-          final remainingMoney = 4.99 - cost;
+          // final remainingMoney = 4.99 - cost;
           // print('remainingMoney ----- $remainingMoney');
 
-          remainingToken = ((remainingMoney * 2000000) / 4.99).toDouble();
-          // print('remainingToken ------ $remainingToken');
+          if (isSubscribe) {
+            setState(() {
+              remainingToken = remainingToken - 1;
+            });
+
+            if (remainingToken == 0) {
+              setState(() {
+                isSubscribe = false;
+              });
+            }
+
+            Get.snackbar("Success", "Your remaining token is $remainingToken");
+            print('remainingToken ------ $remainingToken');
+
+            await UserModel.update(loginUser!.uid, {
+              "remainingToken": remainingToken,
+              "isSubscribe": isSubscribe
+            });
+          }
 
           String answer = responseData['output'][0]['content'][0]['text'];
 
@@ -1598,7 +1633,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
 
           Utility.isNewChat = false;
           getData = false;
-          if (!purchaseController.isSubscribe) {
+          if (!isSubscribe) {
             isShowPopup = true;
           }
 
@@ -1653,7 +1688,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
           extractedText != null ? _formatExtractedText(extractedText) : null,
         );
         getData = false;
-        if (!purchaseController.isSubscribe) {
+        if (!isSubscribe) {
           isShowPopup = true;
         }
         Utility.isType = false;
@@ -1884,6 +1919,24 @@ If any information is not visible or unclear in the image, mark it as "Not found
                                           decorationColor:
                                               AppColor.white.withValues(alpha: 0.5),
                                         ),
+                                        tableHead: TextStyle(
+                                          fontSize: 14,
+                                          color: AppColor.white,
+                                          fontFamily: 'gelasio',
+                                          decoration: TextDecoration.underline,
+                                          fontWeight: FontWeight.w400,
+                                          decorationColor:
+                                              AppColor.white.withValues(alpha: 0.5),
+                                        ),
+                                        tableBody: TextStyle(
+                                          fontSize: 14,
+                                          color: AppColor.white,
+                                          fontFamily: 'gelasio',
+                                          decoration: TextDecoration.underline,
+                                          fontWeight: FontWeight.w400,
+                                          decorationColor:
+                                              AppColor.white.withValues(alpha: 0.5),
+                                        ),
                                       ),
                                       shrinkWrap: true,
                                       selectable: false,
@@ -1908,6 +1961,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
                           );
                         },
                         highlightColor: AppColor.white,
+                        color: AppColor.white,
                         icon: Icon(Icons.copy),
                       ),
                     ],
@@ -1933,6 +1987,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
                           sendMessage(isReload: true);
                         },
                         icon: Icon(CupertinoIcons.arrow_clockwise),
+                        color: AppColor.white,
                         highlightColor: AppColor.white,
                       ),
                       IconButton(
@@ -1944,6 +1999,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
                           );
                         },
                         highlightColor: AppColor.white,
+                        color: AppColor.white,
                         icon: Icon(Icons.copy),
                       ),
                     ],

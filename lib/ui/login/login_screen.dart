@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final Map<String, dynamic> userMap = {
           "uid": uid,
           "email": email,
-          "token": userData?.remainingToken ?? 0,
+          "remainingToken": userData?.remainingToken ?? 0,
           "subscriptionPlan": userData?.subscriptionPlan ?? 0,
           "isReferenceUser": userData?.isReferenceUser ?? false,
           "referenceId": userData?.referenceId ?? '',
@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
             imageUrl: ImageData.icSuccess,
             title: 'Successfully\nLogin',
             description:
-                'Congratulations, your account registration successfully',
+                'Congratulations, your account registration is successfully',
             btnText: 'Continue',
           ),
         );
@@ -165,6 +165,32 @@ class _LoginScreenState extends State<LoginScreen> {
           '${appleCredential.givenName} ${appleCredential.familyName ?? ""}',
         );
       }
+
+      String? email = appleCredential.email ?? userCredential.user?.email;
+
+      // If email is null, fallback to stored email from Firestore
+      if (email != null) {
+        final userData = await UserModel.getById(userCredential.user!.uid);
+        print('userData ---- $userData');
+
+        final Map<String, dynamic> userMap = {
+          "uid": userCredential.user!.uid,
+          "email": email,
+          "remainingToken": userData?.remainingToken ?? 0,
+          "subscriptionPlan": userData?.subscriptionPlan ?? 0,
+          "isReferenceUser": userData?.isReferenceUser ?? false,
+          "referenceId": userData?.referenceId ?? '',
+          "isSubscribe": userData?.isSubscribe ?? false,
+        };
+
+        // convert to JSON
+        final String userJson = jsonEncode(userMap);
+
+        SharedPreferences preferences = await SharedPreferences.getInstance();
+        // save into SharedPreferences as one string
+        await preferences.setString("userData", userJson);
+      }
+
       progressDialog.close();
       Fluttertoast.showToast(msg: 'Signed in with Apple');
       Get.dialog(
@@ -181,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
           imageUrl: ImageData.icSuccess,
           title: 'Successfully\nLogin',
           description:
-              'Congratulations, your account registration successfully',
+              'Congratulations, your account registration is successfully',
           btnText: 'Continue',
         ),
       );
@@ -427,25 +453,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
             ),
-            Visibility(
-              visible:
-                  (previousRoute != '/PremiumScreen' &&
-                      previousRoute != '/SettingScreen'),
-              child: GestureDetector(
-                onTap: () {
-                  Get.offAll(HomeScreen());
-                },
-                child: Container(
-                  padding: EdgeInsets.only(top: 5),
-                  child: appText(
-                    title: "Continue as Guest User",
-                    color: AppColor.white.withValues(alpha: 0.5),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
+            // Visibility(
+            //   visible:
+            //       (previousRoute != '/PremiumScreen' &&
+            //           previousRoute != '/SettingScreen'),
+            //   child: GestureDetector(
+            //     onTap: () {
+            //       Get.offAll(HomeScreen());
+            //     },
+            //     child: Container(
+            //       padding: EdgeInsets.only(top: 5),
+            //       child: appText(
+            //         title: "Continue as Guest User",
+            //         color: AppColor.white.withValues(alpha: 0.5),
+            //         fontSize: 14,
+            //         fontWeight: FontWeight.w600,
+            //       ),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),

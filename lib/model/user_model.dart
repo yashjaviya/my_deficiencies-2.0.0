@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class UserModel {
   final String id;   // Firebase UID
   final String email;
-  final double remainingToken;
+  final int remainingToken;
   bool? isSubscribe;
   double? subscriptionPlan;
   num? subscriptionToken;
@@ -27,7 +27,7 @@ class UserModel {
     return {
       'uid': id,
       'email': email,
-      'token': remainingToken,
+      'remainingToken': remainingToken,
       'subscriptionPlan': subscriptionPlan,
       'isReferenceUser': isReferenceUser,
       'referenceId': referenceId,
@@ -41,7 +41,7 @@ class UserModel {
     return UserModel(
       id: map['uid'] ?? '',
       email: map['email'] ?? '',
-      remainingToken: (map['token'] ?? 0).toDouble(),
+      remainingToken: (map['remainingToken'] ?? 0).toInt(),
       subscriptionPlan: (map['subscriptionPlan'] ?? 0).toDouble(),
       referenceId: map['referenceId'] ?? '',
       isReferenceUser: map['isReferenceUser'] ?? false,
