@@ -24,6 +24,7 @@ import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
 import 'package:my_deficiencies/model/reference_model.dart';
 import 'package:my_deficiencies/model/user_model.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
+import 'package:my_deficiencies/ui/login/login_screen.dart';
 import 'package:my_deficiencies/ui/premium/premium_screen.dart';
 import 'package:my_deficiencies/ui_widget/banner_widget.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
@@ -527,7 +528,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
                                         const SizedBox(height: 12), // spacing between buttons
 
-                                        if (freePlanCurrentIndex < 4 && !isSubscribe && !isReferenceUser)
+                                        if (freePlanCurrentIndex < 7 && !isSubscribe && !isReferenceUser)
                                           // 🔹 New Button (Full Report with Ads)
                                           Padding(
                                             padding: const EdgeInsets.only(
@@ -1080,7 +1081,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
     });
 
     // Check if nextIndex is within valid range (1 to 4)
-    if (nextIndex > 4) {
+    if (nextIndex > 7) {
       flutterToastCenter("No more free versions available.");
       return;
     }
@@ -1242,6 +1243,11 @@ If any information is not visible or unclear in the image, mark it as "Not found
     //   flutterToastCenter("No tokens available. Renew your subscription to continue.");
     //   return;
     // }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+        Get.to(LoginScreen());
+    }
 
     await setCurrentIndex(1);
 

@@ -19,6 +19,7 @@ import 'package:my_deficiencies/model/user_model.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
 import 'package:my_deficiencies/ui/chat/chat_screen.dart';
 import 'package:my_deficiencies/ui/history/history_screen.dart';
+import 'package:my_deficiencies/ui/login/login_screen.dart';
 import 'package:my_deficiencies/ui/premium/premium_screen.dart';
 import 'package:my_deficiencies/ui/setting/setting_screen.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
@@ -87,6 +88,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (code.isEmpty) return;
 
                 try {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user == null) {
+                     Get.to(LoginScreen());
+                  }
+
                   // ✅ Use model instead of raw Firestore
                   final ref = await ReferenceModel.getByCode(code);
 
@@ -101,7 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     SharedPreferences prefs = await SharedPreferences.getInstance();
 
                     // ✅ Update Firestore user collection via model
-                    final user = FirebaseAuth.instance.currentUser;
                     if (user != null) {
                       await UserModel.update(user.uid, {
                         "isReferenceUser": true,
