@@ -183,6 +183,25 @@ class _LoginScreenState extends State<LoginScreen> {
           "isSubscribe": userData?.isSubscribe ?? false,
         };
 
+        if (userData != null) {
+          // 🔹 User already exists → don’t overwrite
+          print("User already exists in Firestore: $userCredential.user!.uid");
+        } else {
+          final user = UserModel(
+            id: userCredential.user?.uid ?? "", 
+            email: email, 
+            remainingToken: 0,
+            isReferenceUser: false,
+            isSubscribe: false,
+            subscriptionToken: 0,
+          );
+          await UserModel.saveUser(user);
+
+          await UserModel.saveUser(user);
+
+          print("✅ New user inserted: ${userCredential.user!.uid}");
+        }
+
         // convert to JSON
         final String userJson = jsonEncode(userMap);
 

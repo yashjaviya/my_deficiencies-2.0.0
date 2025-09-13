@@ -176,7 +176,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         isSubscribe = checkIsSubscribe && user.remainingToken != 0 ? true : false;
         remainingToken = user.remainingToken;
         subscriptionPlan = user.subscriptionPlan ?? 0;
-        isReferenceUser = isTokenActive;
+        isReferenceUser = user.isReferenceUser ?? false;
         currentUser = user; // define `UserModel? currentUser;` in your State class
       });
     } else {
