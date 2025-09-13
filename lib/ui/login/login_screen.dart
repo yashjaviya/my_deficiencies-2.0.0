@@ -56,10 +56,11 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
         progressDialog.show();
-        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+        UserCredential userCredential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+            );
         Fluttertoast.showToast(msg: "Login Successful");
         progressDialog.close();
 
@@ -188,8 +189,8 @@ class _LoginScreenState extends State<LoginScreen> {
           print("User already exists in Firestore: $userCredential.user!.uid");
         } else {
           final user = UserModel(
-            id: userCredential.user?.uid ?? "", 
-            email: email, 
+            id: userCredential.user?.uid ?? "",
+            email: email,
             remainingToken: 0,
             isReferenceUser: false,
             isSubscribe: false,
@@ -323,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             11.toDouble().hs,
             appText(
-              title: 'Welcome Back Yo’ve been\nmissed',
+              title: 'Welcome Back',
               color: AppColor.white,
               fontSize: 14,
               textAlign: TextAlign.center,

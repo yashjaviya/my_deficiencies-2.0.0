@@ -153,18 +153,20 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       ReferenceModel? ref;
       bool isTokenActive = false;
       final now = DateTime.now();
-      if (user.referenceId != null && user.referenceId != '')  {
+      if (user.referenceId != null && user.referenceId != '') {
         ref = await ReferenceModel.getById(user.referenceId ?? '');
 
         if (ref!.isActive && ref.expiredDate.isAfter(now)) {
           isTokenActive = true;
         }
       }
-      
-      if (!isTokenActive && user.isReferenceUser == true && loginUser!.uid != null) {
+
+      if (!isTokenActive &&
+          user.isReferenceUser == true &&
+          loginUser!.uid != null) {
         await UserModel.update(loginUser!.uid, {
           "isReferenceUser": false,
-          "referenceId": ''
+          "referenceId": '',
         });
       }
 
@@ -173,11 +175,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       print('checkIsSubscribe ------ $checkIsSubscribe');
 
       setState(() {
-        isSubscribe = checkIsSubscribe && user.remainingToken != 0 ? true : false;
+        isSubscribe =
+            checkIsSubscribe && user.remainingToken != 0 ? true : false;
         remainingToken = user.remainingToken;
         subscriptionPlan = user.subscriptionPlan ?? 0;
         isReferenceUser = user.isReferenceUser ?? false;
-        currentUser = user; // define `UserModel? currentUser;` in your State class
+        currentUser =
+            user; // define `UserModel? currentUser;` in your State class
       });
     } else {
       print("No user data found in SharedPreferences");
@@ -404,7 +408,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                           children: [
                                             GestureDetector(
                                               onTap: () {
-                                                Utility.promptController.text = question1;
+                                                Utility.promptController.text =
+                                                    question1;
                                                 sendMessage();
                                                 setState(() {});
                                               },
@@ -415,7 +420,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                                 ),
                                                 decoration: BoxDecoration(
                                                   color: AppColor.c303033,
-                                                  borderRadius: BorderRadius.circular(20.0),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        20.0,
+                                                      ),
                                                   border: Border.all(
                                                     color: AppColor.borderColor,
                                                   ),
@@ -448,7 +456,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                             ),
                                             decoration: BoxDecoration(
                                               color: AppColor.c303033,
-                                              borderRadius: BorderRadius.circular(20.0),
+                                              borderRadius:
+                                                  BorderRadius.circular(20.0),
                                               border: Border.all(
                                                 color: AppColor.borderColor,
                                               ),
@@ -461,7 +470,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                             ),
                                           ),
                                         ),
-                                    ]
+                                    ],
                                   ),
                                 )
                                 : Container(),
@@ -469,9 +478,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                               child: GetBuilder<PurchaseController>(
                                 builder: (purchaseController) {
                                   return Visibility(
-                                    visible:
-                                        isShowPopup &&
-                                        !isSubscribe,
+                                    visible: isShowPopup && !isSubscribe,
                                     child: Column(
                                       children: [
                                         if (!isSubscribe && !isReferenceUser)
@@ -481,43 +488,72 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                             ),
                                             child: InkWell(
                                               onTap: () {
-                                                Get.to(PremiumScreen())!.then((value) {
+                                                Get.to(PremiumScreen())!.then((
+                                                  value,
+                                                ) {
                                                   if (isSubscribe) {
-                                                    Utility.promptController.text =
-                                                        Utility.chatHistoryList[Utility.chatHistoryList.length - 2].message!;
+                                                    Utility
+                                                        .promptController
+                                                        .text = Utility
+                                                            .chatHistoryList[Utility
+                                                                    .chatHistoryList
+                                                                    .length -
+                                                                2]
+                                                            .message!;
                                                     sendMessage(
-                                                      iId: Utility.chatHistoryList[Utility.chatHistoryList.length - 2].id,
+                                                      iId:
+                                                          Utility
+                                                              .chatHistoryList[Utility
+                                                                      .chatHistoryList
+                                                                      .length -
+                                                                  2]
+                                                              .id,
                                                     );
                                                   }
                                                 });
                                               },
                                               child: Container(
                                                 decoration: BoxDecoration(
-                                                  color: AppColor.containerColor.withValues(alpha: 0.3),
-                                                  borderRadius: BorderRadius.circular(30.0),
+                                                  color: AppColor.containerColor
+                                                      .withValues(alpha: 0.3),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        30.0,
+                                                      ),
                                                   border: Border.all(
                                                     color: AppColor.borderColor,
                                                   ),
                                                 ),
                                                 child: Padding(
                                                   padding: EdgeInsets.symmetric(
-                                                    vertical: lightDarkController.isLight ? 10.0 : 5.0,
+                                                    vertical:
+                                                        lightDarkController
+                                                                .isLight
+                                                            ? 10.0
+                                                            : 5.0,
                                                     horizontal: 16.0,
                                                   ),
                                                   child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
                                                     children: [
                                                       ImageWidget(
-                                                        imageUrl: SvgAssetsData.icPremium,
+                                                        imageUrl:
+                                                            SvgAssetsData
+                                                                .icPremium,
                                                         color: AppColor.white,
                                                       ),
                                                       10.toDouble().ws,
                                                       appText(
-                                                        title: "For Full Report - Go Premium".tr,
+                                                        title:
+                                                            "For Full Report - Go Premium"
+                                                                .tr,
                                                         color: AppColor.white,
-                                                        fontWeight: FontWeight.w300,
+                                                        fontWeight:
+                                                            FontWeight.w300,
                                                         fontSize: 16,
-                                                        textAlign: TextAlign.center,
+                                                        textAlign:
+                                                            TextAlign.center,
                                                       ),
                                                     ],
                                                   ),
@@ -526,9 +562,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                             ),
                                           ),
 
-                                        const SizedBox(height: 12), // spacing between buttons
+                                        const SizedBox(
+                                          height: 12,
+                                        ), // spacing between buttons
 
-                                        if (freePlanCurrentIndex < 7 && !isSubscribe && !isReferenceUser)
+                                        if (freePlanCurrentIndex < 7 &&
+                                            !isSubscribe &&
+                                            !isReferenceUser)
                                           // 🔹 New Button (Full Report with Ads)
                                           Padding(
                                             padding: const EdgeInsets.only(
@@ -538,34 +578,50 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                               onTap: () async {
                                                 // bool adWatched = await showRewardedAd();
                                                 // if (adWatched) {
-                                                  await showNextVersion();
-                                                  // setState(() {}); // refresh UI
+                                                await showNextVersion();
+                                                // setState(() {}); // refresh UI
                                                 // }
                                               },
                                               child: Container(
                                                 decoration: BoxDecoration(
-                                                  color: AppColor.containerColor.withValues(alpha: 0.3),
-                                                  borderRadius: BorderRadius.circular(30.0),
+                                                  color: AppColor.containerColor
+                                                      .withValues(alpha: 0.3),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        30.0,
+                                                      ),
                                                   border: Border.all(
                                                     color: AppColor.borderColor,
                                                   ),
                                                 ),
                                                 child: Padding(
                                                   padding: EdgeInsets.symmetric(
-                                                    vertical: lightDarkController.isLight ? 10.0 : 5.0,
+                                                    vertical:
+                                                        lightDarkController
+                                                                .isLight
+                                                            ? 10.0
+                                                            : 5.0,
                                                     horizontal: 16.0,
                                                   ),
                                                   child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
                                                     children: [
-                                                      Icon(Icons.play_circle_fill, color: AppColor.white),
+                                                      Icon(
+                                                        Icons.play_circle_fill,
+                                                        color: AppColor.white,
+                                                      ),
                                                       10.toDouble().ws,
                                                       appText(
-                                                        title: "Full Report (with Ads)".tr,
+                                                        title:
+                                                            "Full Report (with Ads)"
+                                                                .tr,
                                                         color: AppColor.white,
-                                                        fontWeight: FontWeight.w300,
+                                                        fontWeight:
+                                                            FontWeight.w300,
                                                         fontSize: 16,
-                                                        textAlign: TextAlign.center,
+                                                        textAlign:
+                                                            TextAlign.center,
                                                       ),
                                                     ],
                                                   ),
@@ -574,7 +630,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                             ),
                                           ),
                                       ],
-                                    )
+                                    ),
                                   );
                                 },
                               ),
@@ -709,7 +765,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                 Expanded(
                                   child: appText(
                                     title:
-                                      "Type Medications / Vitamins\nseparated by commas",
+                                        "Type Medications / Vitamins\nseparated by commas",
                                     color: AppColor.white,
                                     fontWeight: FontWeight.w300,
                                     fontSize: 16,
@@ -1065,7 +1121,10 @@ If any information is not visible or unclear in the image, mark it as "Not found
   }
 
   Future<void> showNextVersion() async {
-    _isAlreadyRunning = getData && Utility.chatHistoryList.last.message == "ABC" && Utility.chatHistoryList.isNotEmpty;
+    _isAlreadyRunning =
+        getData &&
+        Utility.chatHistoryList.last.message == "ABC" &&
+        Utility.chatHistoryList.isNotEmpty;
 
     // Prevent multiple simultaneous calls
     if (getData) {
@@ -1127,10 +1186,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
               }
 
               // Append new free version instruction
-              messages.add({
-                'role': 'assistant',
-                'content': responseText,
-              });
+              messages.add({'role': 'assistant', 'content': responseText});
 
               try {
                 final apiKey = remoteConfig.getString('gpt_token');
@@ -1147,26 +1203,32 @@ If any information is not visible or unclear in the image, mark it as "Not found
                   'input': messages,
                 });
 
-                final response = await http.post(url, headers: headers, body: body);
+                final response = await http.post(
+                  url,
+                  headers: headers,
+                  body: body,
+                );
 
                 if (response.statusCode == 200) {
                   var responseData = jsonDecode(response.body);
-                  String answer = responseData['output'][0]['content'][0]['text'];
+                  String answer =
+                      responseData['output'][0]['content'][0]['text'];
 
                   setState(() {
                     if (Utility.chatHistoryList.isNotEmpty) {
                       // 🔹 Append new response to existing last message
                       String? oldMessage = Utility.chatHistoryList.last.message;
-                      Utility.chatHistoryList[Utility.chatHistoryList.length - 1] =
-                          ChatListHistoryModel(
-                            id: Utility.chatHistoryList.last.id,
-                            message: "$oldMessage $answer", // append instead of replace
-                            currentDateAndTime: DateTime.now().toString(),
-                            isSender: false,
-                            isAnimation: false,
-                            isGpt4: false,
-                            isDisplayButton: nextIndex < 4,
-                          );
+                      Utility.chatHistoryList[Utility.chatHistoryList.length -
+                          1] = ChatListHistoryModel(
+                        id: Utility.chatHistoryList.last.id,
+                        message:
+                            "$oldMessage $answer", // append instead of replace
+                        currentDateAndTime: DateTime.now().toString(),
+                        isSender: false,
+                        isAnimation: false,
+                        isGpt4: false,
+                        isDisplayButton: nextIndex < 4,
+                      );
                     } else {
                       // If empty, just add as new
                       Utility.chatHistoryList.add(
@@ -1183,7 +1245,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
                     }
 
                     getData = false;
-                    scrollController.jumpTo(scrollController.position.maxScrollExtent);
+                    scrollController.jumpTo(
+                      scrollController.position.maxScrollExtent,
+                    );
                   });
 
                   // Save DB
@@ -1200,7 +1264,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
                   setState(() {
                     getData = false;
                   });
-                  flutterToastCenter("Server Timed Out for version $nextIndex. Please try again.");
+                  flutterToastCenter(
+                    "Server Timed Out for version $nextIndex. Please try again.",
+                  );
                 }
               } catch (e) {
                 setState(() {
@@ -1209,7 +1275,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
                 if (kDebugMode) {
                   print("Error in showNextVersion for $nextKey: $e");
                 }
-                flutterToastCenter("Something went wrong for version $nextIndex. Please try again.");
+                flutterToastCenter(
+                  "Something went wrong for version $nextIndex. Please try again.",
+                );
               }
             },
           );
@@ -1221,7 +1289,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
           if (kDebugMode) {
             print("Rewarded ad failed for $nextKey: $error");
           }
-          flutterToastCenter("Ad failed to load for version $nextIndex. Please try again.");
+          flutterToastCenter(
+            "Ad failed to load for version $nextIndex. Please try again.",
+          );
         },
       ),
     );
@@ -1237,7 +1307,6 @@ If any information is not visible or unclear in the image, mark it as "Not found
     await prefs.setInt(_key, index);
   }
 
-
   Future<void> sendMessage({int? iId, bool isReload = false}) async {
     // if (remainingToken == 0 && !isReferenceUser) {
     //   flutterToastCenter("No tokens available. Renew your subscription to continue.");
@@ -1246,7 +1315,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-        Get.to(LoginScreen());
+      Get.to(LoginScreen());
     }
 
     await setCurrentIndex(1);
@@ -1296,7 +1365,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
       // print('isReload >>>> ${isReload}');
       // print('_pickedFile >>>> $_pickedFile');
       // print(
-        // 'is that condition is true........ >>>> ${!isReload && _pickedFile != null}',
+      // 'is that condition is true........ >>>> ${!isReload && _pickedFile != null}',
       // );
 
       if (!isReload && _pickedFile != null) {
@@ -1311,10 +1380,10 @@ If any information is not visible or unclear in the image, mark it as "Not found
         // print('extractedText >>>>> ${extractedText}');
 
         if (extractedText != null
-            // extractedText.containsKey('Medicine') &&
-            // extractedText['Medicine'] != null &&
-            // extractedText['Medicine']!.trim().isNotEmpty
-          ) {
+        // extractedText.containsKey('Medicine') &&
+        // extractedText['Medicine'] != null &&
+        // extractedText['Medicine']!.trim().isNotEmpty
+        ) {
           // Only show and edit 'Medicine' field
           String? initialMedicineName = '';
 
@@ -1396,7 +1465,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
           // Use the edited medicine name as the question
           String editedMedicine = _medicineController.text.trim();
           question =
-              editedMedicine.isNotEmpty ? editedMedicine : 'Synthetics analyzed';
+              editedMedicine.isNotEmpty
+                  ? editedMedicine
+                  : 'Synthetics analyzed';
         } else {
           if (mounted) {
             await showDialog(
@@ -1506,13 +1577,10 @@ If any information is not visible or unclear in the image, mark it as "Not found
                 '${isQuestions1
                     ? remoteConfig.getString('prompt_view_questions_2_0_0')
                     : isQuestions2
-                        ? remoteConfig.getString('prompt_view_questions2_2_0_0')
-                        : (isSubscribe || isReferenceUser
-                            ? remoteConfig.getString('prompt_view_premium_version_2_0_0')
-                            : remoteConfig.getString('free_prompt_version_2_0_1'))}, not html format',
+                    ? remoteConfig.getString('prompt_view_questions2_2_0_0')
+                    : (isSubscribe || isReferenceUser ? remoteConfig.getString('prompt_view_premium_version_2_0_0') : remoteConfig.getString('free_prompt_version_2_0_1'))}, not html format',
             'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant',
           });
-
         }
 
         if (Utility.chatHistoryList[i].imagePath != null &&
@@ -1531,9 +1599,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
                     ? remoteConfig.getString('prompt_view_questions_2_0_0')
                     : isQuestions2
                     ? remoteConfig.getString('prompt_view_questions2_2_0_0')
-                    : (isSubscribe || isReferenceUser
-                        ? remoteConfig.getString('prompt_view_premium_version_2_0_0')
-                        : remoteConfig.getString('free_prompt_version_2_0_1'))}, not html format',
+                    : (isSubscribe || isReferenceUser ? remoteConfig.getString('prompt_view_premium_version_2_0_0') : remoteConfig.getString('free_prompt_version_2_0_1'))}, not html format',
             'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant',
           });
         }
@@ -1618,7 +1684,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
 
             await UserModel.update(loginUser!.uid, {
               "remainingToken": remainingToken,
-              "isSubscribe": isSubscribe
+              "isSubscribe": isSubscribe,
             });
           }
 
@@ -1816,142 +1882,164 @@ If any information is not visible or unclear in the image, mark it as "Not found
                         )
                         : BoxDecoration(),
                 child:
-                  !_isAlreadyRunning
-                    ? (getData && message == "ABC")
-                        ? Padding(
-                            padding: const EdgeInsets.all(5.0),
-                            child: Column(
-                              crossAxisAlignment:
-                                  isGradiant ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                              children: [
-                                Shimmer.fromColors(
-                                  baseColor: Colors.grey.withValues(alpha: 0.3),
-                                  highlightColor: AppColor.white,
-                                  child: appText(
-                                    title: 'Analyze Information',
-                                    color: AppColor.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : Padding(
-                            padding: EdgeInsets.only(
-                              top: 10,
-                              bottom: isGradiant ? 10 : 0,
-                              left: isGradiant
-                                  ? 10
-                                  : message.startsWith('<')
-                                      ? 0
-                                      : 10,
-                              right: isGradiant ? 10 : 0,
-                            ),
-                            child: Column(
-                              crossAxisAlignment:
-                                  isGradiant ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                if (imagePath != null && imagePath.isNotEmpty)
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.file(
-                                      File(imagePath),
-                                      width: 200,
-                                      height: 200,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => appText(
-                                        title: "Failed to load image",
-                                        color: AppColor.white,
-                                      ),
+                    !_isAlreadyRunning
+                        ? (getData && message == "ABC")
+                            ? Padding(
+                              padding: const EdgeInsets.all(5.0),
+                              child: Column(
+                                crossAxisAlignment:
+                                    isGradiant
+                                        ? CrossAxisAlignment.end
+                                        : CrossAxisAlignment.start,
+                                children: [
+                                  Shimmer.fromColors(
+                                    baseColor: Colors.grey.withValues(
+                                      alpha: 0.3,
                                     ),
-                                  ),
-                                if (imagePath != null && imagePath.isNotEmpty) 8.toDouble().hs,
-                                if (isGradiant)
-                                  appText(
-                                    title: message,
-                                    textAlign: TextAlign.start,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 100,
-                                    height: 1.5,
-                                    fontSize: Utility.fontSize,
-                                    color: AppColor.white,
-                                  )
-                                else if (message.startsWith('<'))
-                                  HtmlWidget(
-                                    message,
-                                    textStyle: TextStyle(
+                                    highlightColor: AppColor.white,
+                                    child: appText(
+                                      title: 'Analyzing Information',
                                       color: AppColor.white,
-                                      fontFamily: 'gelasio',
-                                      decorationColor: AppColor.white,
-                                    ),
-                                    enableCaching: false,
-                                    onTapUrl: (url) async {
-                                      if (kDebugMode) {
-                                        // print('onLinkTap $url');
-                                      }
-                                      return await launchUrl(Uri.parse(url));
-                                    },
-                                  )
-                                else
-                                  Selectable(
-                                    showSelection: true,
-                                    selectWordOnDoubleTap: true,
-                                    selectWordOnLongPress: true,
-                                    selectionColor: Colors.blue.withValues(alpha: 0.3),
-                                    child: MarkdownBody(
-                                      data: message,
-                                      softLineBreak: true,
-                                      extensionSet: md.ExtensionSet(
-                                        md.ExtensionSet.gitHubWeb.blockSyntaxes,
-                                        <md.InlineSyntax>[
-                                          md.EmojiSyntax(),
-                                          ...md.ExtensionSet.gitHubWeb.inlineSyntaxes,
-                                        ],
-                                      ),
-                                      styleSheet: MarkdownStyleSheet.fromTheme(
-                                        Theme.of(context),
-                                      ).copyWith(
-                                        p: TextStyle(
-                                          fontSize: 14,
-                                          color: AppColor.white,
-                                          fontFamily: 'gelasio',
-                                        ),
-                                        a: TextStyle(
-                                          fontSize: 14,
-                                          color: AppColor.white,
-                                          fontFamily: 'gelasio',
-                                          decoration: TextDecoration.underline,
-                                          fontWeight: FontWeight.w400,
-                                          decorationColor:
-                                              AppColor.white.withValues(alpha: 0.5),
-                                        ),
-                                        tableHead: TextStyle(
-                                          fontSize: 14,
-                                          color: AppColor.white,
-                                          fontFamily: 'gelasio',
-                                          decoration: TextDecoration.underline,
-                                          fontWeight: FontWeight.w400,
-                                          decorationColor:
-                                              AppColor.white.withValues(alpha: 0.5),
-                                        ),
-                                        tableBody: TextStyle(
-                                          fontSize: 14,
-                                          color: AppColor.white,
-                                          fontFamily: 'gelasio',
-                                          decoration: TextDecoration.underline,
-                                          fontWeight: FontWeight.w400,
-                                          decorationColor:
-                                              AppColor.white.withValues(alpha: 0.5),
-                                        ),
-                                      ),
-                                      shrinkWrap: true,
-                                      selectable: false,
                                     ),
                                   ),
-                              ],
-                            ),
-                          )
-                    : const SizedBox.shrink(),
+                                ],
+                              ),
+                            )
+                            : Padding(
+                              padding: EdgeInsets.only(
+                                top: 10,
+                                bottom: isGradiant ? 10 : 0,
+                                left:
+                                    isGradiant
+                                        ? 10
+                                        : message.startsWith('<')
+                                        ? 0
+                                        : 10,
+                                right: isGradiant ? 10 : 0,
+                              ),
+                              child: Column(
+                                crossAxisAlignment:
+                                    isGradiant
+                                        ? CrossAxisAlignment.end
+                                        : CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.max,
+                                children: [
+                                  if (imagePath != null && imagePath.isNotEmpty)
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.file(
+                                        File(imagePath),
+                                        width: 200,
+                                        height: 200,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                appText(
+                                                  title: "Failed to load image",
+                                                  color: AppColor.white,
+                                                ),
+                                      ),
+                                    ),
+                                  if (imagePath != null && imagePath.isNotEmpty)
+                                    8.toDouble().hs,
+                                  if (isGradiant)
+                                    appText(
+                                      title: message,
+                                      textAlign: TextAlign.start,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 100,
+                                      height: 1.5,
+                                      fontSize: Utility.fontSize,
+                                      color: AppColor.white,
+                                    )
+                                  else if (message.startsWith('<'))
+                                    HtmlWidget(
+                                      message,
+                                      textStyle: TextStyle(
+                                        color: AppColor.white,
+                                        fontFamily: 'gelasio',
+                                        decorationColor: AppColor.white,
+                                      ),
+                                      enableCaching: false,
+                                      onTapUrl: (url) async {
+                                        if (kDebugMode) {
+                                          // print('onLinkTap $url');
+                                        }
+                                        return await launchUrl(Uri.parse(url));
+                                      },
+                                    )
+                                  else
+                                    Selectable(
+                                      showSelection: true,
+                                      selectWordOnDoubleTap: true,
+                                      selectWordOnLongPress: true,
+                                      selectionColor: Colors.blue.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      child: MarkdownBody(
+                                        data: message,
+                                        softLineBreak: true,
+                                        extensionSet: md.ExtensionSet(
+                                          md
+                                              .ExtensionSet
+                                              .gitHubWeb
+                                              .blockSyntaxes,
+                                          <md.InlineSyntax>[
+                                            md.EmojiSyntax(),
+                                            ...md
+                                                .ExtensionSet
+                                                .gitHubWeb
+                                                .inlineSyntaxes,
+                                          ],
+                                        ),
+                                        styleSheet:
+                                            MarkdownStyleSheet.fromTheme(
+                                              Theme.of(context),
+                                            ).copyWith(
+                                              p: TextStyle(
+                                                fontSize: 14,
+                                                color: AppColor.white,
+                                                fontFamily: 'gelasio',
+                                              ),
+                                              a: TextStyle(
+                                                fontSize: 14,
+                                                color: AppColor.white,
+                                                fontFamily: 'gelasio',
+                                                decoration:
+                                                    TextDecoration.underline,
+                                                fontWeight: FontWeight.w400,
+                                                decorationColor: AppColor.white
+                                                    .withValues(alpha: 0.5),
+                                              ),
+                                              tableHead: TextStyle(
+                                                fontSize: 14,
+                                                color: AppColor.white,
+                                                fontFamily: 'gelasio',
+                                                decoration:
+                                                    TextDecoration.underline,
+                                                fontWeight: FontWeight.w400,
+                                                decorationColor: AppColor.white
+                                                    .withValues(alpha: 0.5),
+                                              ),
+                                              tableBody: TextStyle(
+                                                fontSize: 14,
+                                                color: AppColor.white,
+                                                fontFamily: 'gelasio',
+                                                decoration:
+                                                    TextDecoration.underline,
+                                                fontWeight: FontWeight.w400,
+                                                decorationColor: AppColor.white
+                                                    .withValues(alpha: 0.5),
+                                              ),
+                                            ),
+                                        shrinkWrap: true,
+                                        selectable: false,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            )
+                        : const SizedBox.shrink(),
               ),
               isGradiant
                   ? Row(
