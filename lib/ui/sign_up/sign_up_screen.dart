@@ -74,7 +74,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         remainingToken: 0,
         isReferenceUser: false,
         isSubscribe: false,
-        subscriptionToken: 0,
       );
       await UserModel.saveUser(user);
 
@@ -153,7 +152,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           remainingToken: 0,
           isReferenceUser: false,
           isSubscribe: false,
-          subscriptionToken: 0,
         );
         await UserModel.saveUser(user);
       }

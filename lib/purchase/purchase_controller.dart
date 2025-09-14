@@ -14,6 +14,7 @@ import 'package:my_deficiencies/firebase/realtime_database.dart';
 import 'package:my_deficiencies/firebase/remote_config.dart';
 import 'package:my_deficiencies/model/sku_model.dart';
 import 'package:my_deficiencies/model/user_model.dart';
+import 'package:my_deficiencies/ui/login/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 ProgressDialog dialogBuilder = ProgressDialog();
@@ -112,6 +113,7 @@ class PurchaseController extends GetxController {
 
   Future<void> _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) async {
     try {
+      
 
       if (kDebugMode) {
         print('_listenToPurchaseUpdated:- ${purchaseDetailsList.length}');
@@ -151,6 +153,9 @@ class PurchaseController extends GetxController {
         } else {
           if (purchaseDetails.status == PurchaseStatus.error) {
             dialogHide();
+
+            unawaited(deliverProduct(purchaseDetails));
+
             _purchasePending = false;
             handleError(purchaseDetails.error!);
           } else if (purchaseDetails.status == PurchaseStatus.purchased || purchaseDetails.status == PurchaseStatus.restored) {
@@ -240,14 +245,18 @@ class PurchaseController extends GetxController {
       // Decide tokens based on purchase productID
       int addTokens = 0;
       double subPlan = 4.99;
+      DateTime expiryDate = DateTime.now();
       if (purchaseDetails.productID == "weekly4.99" || purchaseDetails.productID == 'weekly') {
         addTokens = 2;
+        expiryDate = DateTime.now().add(const Duration(days: 7)); // 1 week
       } else if (purchaseDetails.productID == "monthly49.99" || purchaseDetails.productID == 'monthly') {
-        addTokens = 100;
+        addTokens = 109;
         subPlan = 49.99;
-      } else if (purchaseDetails.productID == "yearly499.99") {
+        expiryDate = DateTime.now().add(const Duration(days: 30)); // approx 1 month
+      } else if (purchaseDetails.productID == "yearly499.99" || purchaseDetails.productID == 'yearly') {
         addTokens = 1310;
         subPlan = 499.99;
+        expiryDate = DateTime.now().add(const Duration(days: 365)); // 1 year
       }
 
       print('-------------------------------');
@@ -257,16 +266,21 @@ class PurchaseController extends GetxController {
       print('-------------------------------');
 
       // Update Firestore
-      await UserModel.update(loginUser.uid, {
+      await UserModel.update(loginUser!.uid, {
         "remainingToken": currentTokens + addTokens,
         "isSubscribe": true,
         "subscriptionPlan": subPlan,
+        'expiryDate': expiryDate,
+        'renewDate': DateTime.now()
       });
 
       final Map<String, dynamic> userMap = jsonDecode(userJson);
       userMap["remainingToken"] = currentTokens + addTokens;
       userMap["isSubscribe"] = true;
       userMap["subscriptionPlan"] = subPlan;
+      userMap["expiryDate"] = expiryDate.toString();
+      userMap["renewDate"] = DateTime.now().toString();
+
       await prefs.setString("userData", jsonEncode(userMap));
     }
   }
@@ -276,6 +290,13 @@ class PurchaseController extends GetxController {
     if(_purchasePending) {
       return;
     }
+
+    final loginUser = FirebaseAuth.instance.currentUser;
+    if (loginUser == null) {
+      Get.offAll(LoginScreen());
+      return;
+    }
+
     isPurchaseOneTime = false;
     isStart = false;
     dialogShow();

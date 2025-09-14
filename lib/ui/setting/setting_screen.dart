@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:clipboard/clipboard.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,6 +11,8 @@ import 'package:my_deficiencies/common/common.dart';
 import 'package:my_deficiencies/common/utility.dart';
 import 'package:my_deficiencies/firebase/remote_config.dart';
 import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
+import 'package:my_deficiencies/model/reference_model.dart';
+import 'package:my_deficiencies/model/user_model.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
 import 'package:my_deficiencies/ui/login/login_screen.dart';
 import 'package:share_plus/share_plus.dart';
@@ -26,6 +30,7 @@ class _SettingScreenState extends State<SettingScreen> {
   PurchaseController purchaseController = Get.put(PurchaseController());
   RemoteConfig remoteConfig = Get.put(RemoteConfig());
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool alreadyReferenceUser = false;
 
   Future<void> _logout() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -34,6 +39,126 @@ class _SettingScreenState extends State<SettingScreen> {
     _auth.signOut();
 
     Get.offAll(LoginScreen());
+  }
+
+  Future<void> _checkReferenceStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userJson = prefs.getString("userData");
+    bool isReferred = false;
+    
+    if (userJson != null) {
+      final Map<String, dynamic> userMap = jsonDecode(userJson);
+
+      // check inside userdata if isReferenceUser is true
+      isReferred = userMap["isReferenceUser"] ?? false;
+    }
+
+    setState(() {
+      alreadyReferenceUser = isReferred;
+    });
+
+    print('alreadyReferenceUser ---- $alreadyReferenceUser');
+  }
+
+  // 🔥 Open Reference Code dialog
+  Future<void> _openReferenceDialog() async {
+    // ignore: no_leading_underscores_for_local_identifiers
+    final TextEditingController _controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Enter Reference Code"),
+          content: TextField(
+            controller: _controller,
+            decoration: const InputDecoration(
+              hintText: "Reference Code",
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // close dialog
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () async {
+                final code = _controller.text.trim();
+                if (code.isEmpty) return;
+
+                try {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user == null) {
+                     Get.to(LoginScreen());
+                  }
+
+                  // ✅ Use model instead of raw Firestore
+                  final ref = await ReferenceModel.getByCode(code);
+
+                  if (ref == null) {
+                    Get.snackbar(
+                      "Invalid", "Reference code not found",
+                      colorText: AppColor.white,
+                    );
+                    return;
+                  }
+
+                  final now = DateTime.now();
+
+                  if (ref.code == code && ref.isActive && ref.expiredDate.isAfter(now)) {
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+                    // ✅ Update Firestore user collection via model
+                    if (user != null) {
+                      await UserModel.update(user.uid, {
+                        "isReferenceUser": true,
+                        "referenceId": ref.id,
+                      });
+                    }
+
+                    // ✅ Update SharedPreferences userData
+                    String? userJson = prefs.getString("userData");
+                    if (userJson != null) {
+                      final Map<String, dynamic> userMap = jsonDecode(userJson);
+
+                      userMap["isReferenceUser"] = true;
+                      userMap["referenceId"] = ref.id;
+
+                      await prefs.setString("userData", jsonEncode(userMap));
+                    }
+
+                    // ✅ Update state
+                    setState(() {
+                      alreadyReferenceUser = true;
+                    });
+
+                    Get.snackbar(
+                      "Success", "Reference code applied",
+                      colorText: AppColor.white,
+                    );
+                    Navigator.pop(context); // close dialog
+                  } else {
+                    Get.snackbar(
+                      "Invalid", "Reference code expired or inactive",
+                      colorText: AppColor.white,
+                    );
+                  }
+                } catch (e) {
+                  print('error ---- $e');
+                  Get.snackbar(
+                    "Error", e.toString(),
+                    colorText: AppColor.white,
+                  );
+                }
+              },
+              child: const Text("Submit"),
+            )
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -211,7 +336,8 @@ class _SettingScreenState extends State<SettingScreen> {
                   5.toDouble().hs,
                   TextButton(
                     onPressed: () {
-                      purchaseController.onClickRestore();
+                      // purchaseController.onClickRestore();
+                      _openReferenceDialog();
                     },
                     child: Row(
                       children: [

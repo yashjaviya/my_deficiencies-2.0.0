@@ -78,6 +78,8 @@ class _LoginScreenState extends State<LoginScreen> {
           "isReferenceUser": userData?.isReferenceUser ?? false,
           "referenceId": userData?.referenceId ?? '',
           "isSubscribe": userData?.isSubscribe ?? false,
+          "renewDate": userData?.renewDate.toString(),
+          "expiryDate": userData?.expiryDate.toString(),
         };
 
         // convert to JSON
@@ -193,7 +195,6 @@ class _LoginScreenState extends State<LoginScreen> {
             remainingToken: 0,
             isReferenceUser: false,
             isSubscribe: false,
-            subscriptionToken: 0,
           );
           await UserModel.saveUser(user);
 

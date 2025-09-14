@@ -7,9 +7,10 @@ class UserModel {
   final int remainingToken;
   bool? isSubscribe;
   double? subscriptionPlan;
-  num? subscriptionToken;
   bool? isReferenceUser;
   String? referenceId;
+  DateTime? renewDate;
+  DateTime? expiryDate;
 
   UserModel({
     required this.id,
@@ -18,8 +19,9 @@ class UserModel {
     this.subscriptionPlan,
     this.isReferenceUser,
     this.referenceId,
-    this.subscriptionToken,
-    this.isSubscribe
+    this.isSubscribe,
+    this.renewDate,
+    this.expiryDate,
   });
 
   /// Convert object to Map (for Firestore)
@@ -31,13 +33,30 @@ class UserModel {
       'subscriptionPlan': subscriptionPlan,
       'isReferenceUser': isReferenceUser,
       'referenceId': referenceId,
-      'subscriptionToken': subscriptionToken,
-      'isSubscribe': isSubscribe
+      'isSubscribe': isSubscribe,
+      'renewDate': renewDate,
+      'expiryDate': expiryDate,
     };
   }
 
   /// Create object from Map (Firestore)
   factory UserModel.fromMap(Map<String, dynamic> map) {
+    DateTime _convertDate(dynamic value) {
+      if (value == null) return DateTime.now();
+
+      if (value is Timestamp) {
+        return value.toDate(); // ✅ convert Firestore Timestamp
+      } else if (value is DateTime) {
+        return value;
+      } else if (value is int) {
+        return DateTime.fromMillisecondsSinceEpoch(value);
+      } else if (value is String) {
+        return DateTime.tryParse(value) ?? DateTime.now();
+      }
+
+      return DateTime.now();
+    }
+
     return UserModel(
       id: map['uid'] ?? '',
       email: map['email'] ?? '',
@@ -45,8 +64,9 @@ class UserModel {
       subscriptionPlan: (map['subscriptionPlan'] ?? 0).toDouble(),
       referenceId: map['referenceId'] ?? '',
       isReferenceUser: map['isReferenceUser'] ?? false,
-      subscriptionToken: map['subscriptionToken'] ?? 0,
       isSubscribe: map['isSubscribe'] ?? false,
+      renewDate: _convertDate(map['renewDate']),
+      expiryDate: _convertDate(map['expiryDate']),
     );
   }
 
@@ -59,7 +79,7 @@ class UserModel {
 
   @override
   String toString() =>
-      'UserModel(uid: $id, email: $email, remainingToken: $remainingToken, subscriptionPlan: $subscriptionPlan, referenceId: $referenceId, isReferenceUser: $isReferenceUser, subscriptionToken: $subscriptionToken, isSubscribe: $isSubscribe)';
+      'UserModel(uid: $id, email: $email, remainingToken: $remainingToken, subscriptionPlan: $subscriptionPlan, referenceId: $referenceId, isReferenceUser: $isReferenceUser, isSubscribe: $isSubscribe, renewDate: $renewDate, expiryDate: $expiryDate)';
 
   // ================= FIREBASE EVENTS ================= //
 
@@ -74,6 +94,7 @@ class UserModel {
   static Future<UserModel?> getById(String uid) async {
     final doc = await firestore.collection("users").doc(uid).get();
     if (doc.exists && doc.data() != null) {
+      print('doc.data() ---- ${doc.data()}');
       return UserModel.fromMap(doc.data()!);
     }
     return null;

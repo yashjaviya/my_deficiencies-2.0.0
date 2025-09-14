@@ -97,7 +97,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   final ref = await ReferenceModel.getByCode(code);
 
                   if (ref == null) {
-                    Get.snackbar("Invalid", "Reference code not found");
+                    Get.snackbar(
+                      "Invalid", "Reference code not found",
+                      colorText: AppColor.white,
+                    );
                     return;
                   }
 
@@ -130,14 +133,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       alreadyReferenceUser = true;
                     });
 
-                    Get.snackbar("Success", "Reference code applied");
+                    Get.snackbar(
+                      "Success", "Reference code applied",
+                      colorText: AppColor.white,
+                    );
                     Navigator.pop(context); // close dialog
                   } else {
-                    Get.snackbar("Invalid", "Reference code expired or inactive");
+                    Get.snackbar(
+                      "Invalid", "Reference code expired or inactive",
+                      colorText: AppColor.white,
+                    );
                   }
                 } catch (e) {
                   print('error ---- $e');
-                  Get.snackbar("Error", e.toString());
+                  Get.snackbar(
+                    "Error", e.toString(),
+                    colorText: AppColor.white,
+                  );
                 }
               },
               child: const Text("Submit"),
