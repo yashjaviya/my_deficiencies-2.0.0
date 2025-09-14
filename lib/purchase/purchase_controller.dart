@@ -153,9 +153,6 @@ class PurchaseController extends GetxController {
         } else {
           if (purchaseDetails.status == PurchaseStatus.error) {
             dialogHide();
-
-            unawaited(deliverProduct(purchaseDetails));
-
             _purchasePending = false;
             handleError(purchaseDetails.error!);
           } else if (purchaseDetails.status == PurchaseStatus.purchased || purchaseDetails.status == PurchaseStatus.restored) {

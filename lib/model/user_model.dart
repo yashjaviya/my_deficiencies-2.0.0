@@ -94,7 +94,6 @@ class UserModel {
   static Future<UserModel?> getById(String uid) async {
     final doc = await firestore.collection("users").doc(uid).get();
     if (doc.exists && doc.data() != null) {
-      print('doc.data() ---- ${doc.data()}');
       return UserModel.fromMap(doc.data()!);
     }
     return null;

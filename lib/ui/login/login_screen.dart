@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
               email: _emailController.text.trim(),
               password: _passwordController.text.trim(),
             );
-        Fluttertoast.showToast(msg: "Login Successful");
+        // Fluttertoast.showToast(msg: "Login Successful");
         progressDialog.close();
 
         String uid = userCredential.user!.uid; // 👈 UID here
