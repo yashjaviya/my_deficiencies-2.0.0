@@ -65,5 +65,9 @@
     <string>Store Your PDF to you storage please allow this permission</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3051873875639589~2389012423</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to take photos</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library</string>
 </dict>
 </plist>
