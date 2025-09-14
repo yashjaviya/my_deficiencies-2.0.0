@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutter/cupertino.dart';
@@ -15,12 +16,14 @@ import 'package:my_deficiencies/data_base/chat_list_data_base.dart';
 import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
 import 'package:my_deficiencies/model/chat_gpt_d_b_model.dart';
 import 'package:my_deficiencies/ui/chat/chat_screen.dart';
+import 'package:my_deficiencies/ui/login/login_screen.dart';
 import 'package:my_deficiencies/ui/setting/setting_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pull_down_button/pull_down_button.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -30,6 +33,26 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
+  String userID = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      Get.offAll(LoginScreen());
+      return;
+    }
+
+    setState(() {
+      userID = user.uid;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -41,6 +64,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ? chatGptDbModel.message!.first
               : ChatListHistoryModel(
                   id: 0,
+                  userId: userID,
                   message: '',
                   currentDateAndTime: '',
                   isSender: false,
@@ -55,7 +79,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Utility.isNewChat = false;
 
           if (kDebugMode) {
-            print('ChatScreen ${await DBHelper.getData(chatGptDbModel.id)}');
+            print('ChatScreen ${await DBHelper.getData(chatGptDbModel.id, userID)}');
           }
 
           Get.to(ChatScreen())!.then((value) {
@@ -135,6 +159,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           DBHelper.updateTitle(
                             safeTitle,
                             chatGptDbModel.id,
+                            userID,
                             chatGptDbModel.currentDateAndTime,
                           );
                           setState(() {});
@@ -206,7 +231,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             centerTitle: true,
           ),
           body: FutureBuilder(
-            future: DBHelper.getAllData(),
+            future: DBHelper.getAllData(userID),
             builder: (context, snap) {
               if(!snap.hasData) {
                 return Container();

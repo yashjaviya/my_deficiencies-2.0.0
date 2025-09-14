@@ -24,7 +24,8 @@ class DBHelper {
             isAnimation INTEGER,
             isGpt4 INTEGER,
             imagePath TEXT,
-            imageText TEXT
+            imageText TEXT,
+            userId Text
           )
         ''').catchError((val) {
           if (kDebugMode) {
@@ -58,8 +59,12 @@ class DBHelper {
         if (oldVersion < 4 && !await _columnExists(db, 'ChatListHistory', 'imageText')) {
           await db.execute('ALTER TABLE ChatListHistory ADD COLUMN imageText TEXT');
         }
+
+        if (oldVersion < 5 && !await _columnExists(db, 'ChatListHistory', 'userId')) {
+          await db.execute('ALTER TABLE ChatListHistory ADD COLUMN userId TEXT');
+        }
       },
-      version: 4, // Incremented to ensure migration
+      version: 5, // Incremented to ensure migration
     );
   }
 
@@ -68,32 +73,42 @@ class DBHelper {
     return db.insert("ChatListHistory", data);
   }
 
-  static Future<List<Map<String, Object?>>> getData(int id) async {
+  static Future<List<Map<String, Object?>>> getData(int id, String userId) async {
     final db = await DBHelper.database();
-    return db.query("ChatListHistory", where: 'id = ?', whereArgs: [id]);
+    return db.query(
+      "ChatListHistory",
+      where: 'id = ? AND userId = ?',
+      whereArgs: [id, userId],
+    );
+
   }
 
-  static Future<List<Map<String, Object?>>> getAllData() async {
+  static Future<List<Map<String, Object?>>> getAllData(String userId) async {
     final db = await DBHelper.database();
-    return db.query("ChatListHistory");
+    return db.query(
+      "ChatListHistory",
+      where: 'userId = ?',
+      whereArgs: [userId]
+    );
   }
 
-  static Future<void> deleteData(int id) async {
+  static Future<void> deleteData(int id, String userId) async {
     final db = await DBHelper.database();
-    await db.delete("ChatListHistory", where: 'id = ?', whereArgs: [id]);
+    await db.delete("ChatListHistory", where: 'id = ? AND userId = ?', whereArgs: [id, userId]);
   }
 
-  static Future<void> deleteChat(int id, String currentDateAndTime) async {
+  static Future<void> deleteChat(int id, String currentDateAndTime, String userId) async {
     final db = await DBHelper.database();
     await db.rawDelete(
-      "DELETE FROM ChatListHistory WHERE id = ? AND currentDateAndTime = ?",
-      [id, currentDateAndTime],
+      "DELETE FROM ChatListHistory WHERE id = ? AND currentDateAndTime = ? AND userId = ?",
+      [id, currentDateAndTime, userId],
     );
   }
 
   static Future<void> updateData(
     String message,
     int id,
+    String userId,
     String currentDateAndTime,
     String? imagePath,
     String? imageText
@@ -107,16 +122,17 @@ class DBHelper {
       {
         'message': message,
         'imagePath': imagePath ?? '',
-        'imageText': imageText ?? ''
+        'imageText': imageText ?? '',
       },
-      where: 'id = ? AND currentDateAndTime = ?',
-      whereArgs: [id, currentDateAndTime],
+      where: 'id = ? AND currentDateAndTime = ? AND userId = ?',
+      whereArgs: [id, currentDateAndTime, userId],
     );
   }
 
   static Future<void> updateTitle(
     String title,
     int id,
+    String userId,
     String currentDateAndTime,
   ) async {
     final db = await DBHelper.database();
@@ -126,14 +142,15 @@ class DBHelper {
     await db.update(
       "ChatListHistory",
       {'title': title},
-      where: 'id = ? AND currentDateAndTime = ?',
-      whereArgs: [id, currentDateAndTime],
+      where: 'id = ? AND currentDateAndTime = ? AND userId = ?',
+      whereArgs: [id, currentDateAndTime, userId],
     );
   }
 }
 
 class ChatListHistoryModel {
   int id;
+  String userId;
   String? message;
   String currentDateAndTime;
   bool isSender;
@@ -145,6 +162,7 @@ class ChatListHistoryModel {
 
   ChatListHistoryModel({
     required this.id,
+    required this.userId,
     this.message,
     required this.currentDateAndTime,
     required this.isSender,
@@ -158,6 +176,7 @@ class ChatListHistoryModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'userId': userId,
       'message': message,
       'currentDateAndTime': currentDateAndTime,
       'isSender': isSender ? 1 : 0,
@@ -172,6 +191,7 @@ class ChatListHistoryModel {
   factory ChatListHistoryModel.fromJson(Map<String, dynamic> json) {
     return ChatListHistoryModel(
       id: json["id"] as int,
+      userId: json["userId"],
       message: json["message"] ?? '',
       currentDateAndTime: json["currentDateAndTime"] ?? '',
       isSender: (json["isSender"] ?? 1) == 1,
@@ -188,6 +208,7 @@ class ChatListHistoryModel {
 class AddChatListHistory {
   Future<void> saveChatListHistory({
     required int id,
+    required String userId,
     String? message,
     required String currentDateAndTime,
     required bool isSender,
@@ -198,6 +219,7 @@ class AddChatListHistory {
   }) async {
     await DBHelper.insert({
       'id': id,
+      'userId': userId,
       'title': title ?? '',
       'message': message ?? '',
       'currentDateAndTime': currentDateAndTime,
@@ -209,8 +231,8 @@ class AddChatListHistory {
     });
   }
 
-  Future<List<ChatListHistoryModel>> fetchChatListHistory(int id) async {
-    final historyList = await DBHelper.getData(id);
+  Future<List<ChatListHistoryModel>> fetchChatListHistory(int id, String userId) async {
+    final historyList = await DBHelper.getData(id, userId);
     return historyList
         .map((item) => ChatListHistoryModel.fromJson(
               Map<String, dynamic>.from(item),
@@ -219,21 +241,22 @@ class AddChatListHistory {
   }
 
   Future<void> updateChatListHistory(
-    int id, {
+    int id, 
+    String userId, {
     String? message,
     required String currentDateAndTime,
     required bool isSender,
     String? imagePath,
     String? imageText,
   }) async {
-    await DBHelper.updateData(message!, id, currentDateAndTime, imagePath, imageText);
+    await DBHelper.updateData(message!, id, userId, currentDateAndTime, imagePath, imageText);
   }
 
-  Future<void> deleteChatListHistory(int id) async {
-    await DBHelper.deleteData(id);
+  Future<void> deleteChatListHistory(int id, String userId) async {
+    await DBHelper.deleteData(id, userId);
   }
 
-  Future<void> deleteChatHistory(int id, String currentDateAndTime) async {
-    await DBHelper.deleteChat(id, currentDateAndTime);
+  Future<void> deleteChatHistory(int id, String currentDateAndTime, String userId) async {
+    await DBHelper.deleteChat(id, currentDateAndTime, userId);
   }
 }

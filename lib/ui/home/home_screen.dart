@@ -34,6 +34,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool alreadyReferenceUser = false; // ✅ variable to track reference usage
+  String userID = '';
 
   @override
   void initState() {
@@ -53,8 +54,15 @@ class _HomeScreenState extends State<HomeScreen> {
       isReferred = userMap["isReferenceUser"] ?? false;
     }
 
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      Get.offAll(LoginScreen());
+      return;
+    }
+
     setState(() {
       alreadyReferenceUser = isReferred;
+      userID = user.uid;
     });
 
     print('alreadyReferenceUser ---- $alreadyReferenceUser');
@@ -183,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Utility.isSenderId = chatGptDbModel.id;
               Utility.isNewChat = false;
               if (kDebugMode) {
-                print('ChatScreen  ${await DBHelper.getData(3)}');
+                // print('ChatScreen  ${await DBHelper.getData(3)}');
               }
               Get.to(ChatScreen())!.then(
                 (value) {
@@ -332,11 +340,14 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             FutureBuilder(
-                future: DBHelper.getAllData(),
+                future: DBHelper.getAllData(userID),
                 builder: (context, snap) {
                   if (!snap.hasData) {
                     return Container();
                   }
+
+                  print('snap.data ----- ${snap.data}');
+
                   if (snap.data == null) {
                     return Container();
                   }
@@ -392,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Utility.chatHistoryList = [];
                   Utility.isNewChat = true;
                   if (kDebugMode) {
-                    print('ChatScreen  ${await DBHelper.getData(3)}');
+                    // print('ChatScreen  ${await DBHelper.getData(3)}');
                   }
                   Get.to(ChatScreen())!.then(
                     (value) async {

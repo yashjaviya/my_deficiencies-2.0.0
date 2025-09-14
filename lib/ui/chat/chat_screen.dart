@@ -98,6 +98,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   int remainingToken = 0;
   num inputToken = 0;
   num outputToken = 0;
+  String userID = '';
 
   RemoteConfig remoteConfig = Get.put(RemoteConfig());
 
@@ -180,8 +181,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         remainingToken = user.remainingToken;
         subscriptionPlan = user.subscriptionPlan ?? 0;
         isReferenceUser = user.isReferenceUser ?? false;
-        currentUser =
-            user; // define `UserModel? currentUser;` in your State class
+        currentUser = user; // define `UserModel? currentUser;` in your State class
+        userID = loginUser!.uid;
       });
     } else {
       print("No user data found in SharedPreferences");
@@ -702,12 +703,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           child: InkWell(
                             onTap: () {
                               String? message =
-                                  Utility
-                                      .chatHistoryList[Utility
-                                              .chatHistoryList
-                                              .length -
-                                          1]
-                                      .message;
+                                  Utility.chatHistoryList[
+                                    Utility.chatHistoryList.length - 1].message;
 
                               Utility
                                   .chatHistoryList[Utility
@@ -726,13 +723,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                               );
 
                               addChatListHistory.updateChatListHistory(
-                                Utility
-                                    .chatHistoryList[Utility
-                                            .chatHistoryList
-                                            .length -
-                                        1]
-                                    .id,
-                                message: message.substring(
+                                Utility.chatHistoryList[
+                                  Utility.chatHistoryList.length - 1].id, userID,
+                                  message: message.substring(
                                   0,
                                   message.length - controller.count.value,
                                 ),
@@ -1376,6 +1369,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       Utility.chatHistoryList[Utility.chatHistoryList.length -
                           1] = ChatListHistoryModel(
                         id: Utility.chatHistoryList.last.id,
+                        userId: userID,
                         message:
                             "$oldMessage $answer", // append instead of replace
                         currentDateAndTime: DateTime.now().toString(),
@@ -1389,6 +1383,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       Utility.chatHistoryList.add(
                         ChatListHistoryModel(
                           id: 1,
+                          userId: userID,
                           message: answer,
                           currentDateAndTime: DateTime.now().toString(),
                           isSender: false,
@@ -1409,6 +1404,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   await DBHelper.updateData(
                     jsonEncode(Utility.chatHistoryList),
                     Utility.isSenderId,
+                    userID,
                     DateTime.now().millisecondsSinceEpoch.toString(),
                     '',
                     null,
@@ -1616,6 +1612,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         Utility.chatHistoryList.add(
           ChatListHistoryModel(
             id: id,
+            userId: userID,
             message: question,
             currentDateAndTime: DateTime.now().toString(),
             isSender: true,
@@ -1632,6 +1629,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         Utility.chatHistoryList.add(
           ChatListHistoryModel(
             id: id,
+            userId: userID,
             message: question,
             currentDateAndTime: DateTime.now().toString(),
             isSender: true,
@@ -1650,6 +1648,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         await DBHelper.updateData(
           jsonEncode(Utility.chatHistoryList),
           Utility.isSenderId,
+          userID,
           DateTime.now().millisecondsSinceEpoch.toString(),
           _pickedFile?.path ?? '',
           extractedText != null ? _formatExtractedText(extractedText) : null,
@@ -1657,6 +1656,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       } else {
         Utility.isSenderId = await DBHelper.insert({
           'title': Utility.chatHistoryList.first.message,
+          'userId': userID,
           'message': jsonEncode(Utility.chatHistoryList),
           'CurrentDateAndTime': DateTime.now().millisecondsSinceEpoch,
           'imagePath': _pickedFile?.path ?? '',
@@ -1717,6 +1717,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           Utility.chatHistoryList.add(
             ChatListHistoryModel(
               id: id,
+              userId: userID,
               message: answer,
               currentDateAndTime: DateTime.now().toString(),
               isSender: false,
@@ -1735,6 +1736,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               remainingToken -= 1;
             });
             if (remainingToken == 0) isSubscribe = false;
+
+            final prefs = await SharedPreferences.getInstance();
+            final String? userJson = prefs.getString("userData");
+            final Map<String, dynamic> userMap = jsonDecode(userJson!);
+            userMap["remainingToken"] = remainingToken;
+            userMap["isSubscribe"] = isSubscribe;
+            await prefs.setString("userData", jsonEncode(userMap));
 
             await UserModel.update(loginUser!.uid, {
               "remainingToken": remainingToken,
@@ -1755,6 +1763,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           DBHelper.updateData(
             jsonEncode(Utility.chatHistoryList),
             Utility.isSenderId,
+            userID,
             DateTime.now().millisecondsSinceEpoch.toString(),
             '',
             extractedText != null ? _formatExtractedText(extractedText) : null,
@@ -1776,6 +1785,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         Utility.chatHistoryList.add(
           ChatListHistoryModel(
             id: id,
+            userId: userID,
             message:
                 'Server Timed Out. Please copy medications, and enter again',
             currentDateAndTime: DateTime.now().toString(),
@@ -1788,6 +1798,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         await DBHelper.updateData(
           jsonEncode(Utility.chatHistoryList),
           Utility.isSenderId,
+          userID,
           DateTime.now().millisecondsSinceEpoch.toString(),
           '',
           extractedText != null ? _formatExtractedText(extractedText) : null,
