@@ -195,18 +195,75 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final picker.XFile? image = await _imagePicker.pickImage(
-      source: picker.ImageSource.gallery,
+  // Future<void> _pickImage() async {
+  //   final picker.XFile? image = await _imagePicker.pickImage(
+  //     source: picker.ImageSource.gallery,
+  //   );
+  //   if (image != null) {
+  //     setState(() {
+  //       _pickedFile = image;
+  //     });
+  //     // print("Picked file path: ${image.path}");
+  //   } else {
+  //     // print("No image selected");
+  //   }
+  // }
+
+  Future<void> _getImage(picker.ImageSource source) async {
+    final picker.ImagePicker imagePicker = picker.ImagePicker();
+    final picker.XFile? pickedFile = await imagePicker.pickImage(
+      source: source,
+      imageQuality: 75,
     );
-    if (image != null) {
+
+    if (pickedFile != null) {
       setState(() {
-        _pickedFile = image;
+        _pickedFile = pickedFile;
       });
-      // print("Picked file path: ${image.path}");
     } else {
-      // print("No image selected");
+      flutterToastCenter("No image selected");
     }
+  }
+
+  void _pickImage() {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: AppColor.containerColor,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.photo_library, color: AppColor.white),
+                title: Text(
+                  'Upload from Gallery',
+                  style: TextStyle(color: AppColor.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _getImage(picker.ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: AppColor.white),
+                title: Text(
+                  'Capture from Camera',
+                  style: TextStyle(color: AppColor.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _getImage(picker.ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   bool isShowPopup = false;
@@ -819,6 +876,20 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                               ],
                             ),
                           8.toDouble().hs,
+                          if (remainingToken != null && isSubscribe)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 4.0,
+                                left: 10,
+                              ),
+                              child: appText(
+                                title:
+                                    "You have $remainingToken Full report left",
+                                color: AppColor.white.withOpacity(0.7),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
                           Row(
                             children: [
                               Expanded(
@@ -1003,9 +1074,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
-  Future<Map<String, String>?> _extractMedicineFromImage(
-    String imagePath,
-  ) async {
+  Future<Map<String, String>?> extractProductLabelData(String imagePath) async {
     try {
       final apiKey = remoteConfig.getString('gpt_token');
       final url = Uri.parse('https://api.openai.com/v1/chat/completions');
@@ -1015,24 +1084,58 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         'Authorization': 'Bearer $apiKey',
       };
 
-      final imgBase64 = _encodeImageToBase64(imagePath);
+      final imgBase64 = await _encodeImageToBase64(
+        imagePath,
+      ); // Ensure this is async-safe
+      if (imgBase64 == null || imgBase64.isEmpty) {
+        throw Exception('Base64 image encoding failed.');
+      }
 
       final extractionPrompt = '''
-You are a medical assistant. Extract the following information from the image of a medicine label:
+  You are a smart medical assistant. Analyze the image of a product label and extract the following information clearly and accurately.
 
-- Medicine Name
-- Form (e.g., Tablet, Syrup, Injection)
-- Active Ingredient(s)
-- Dosage (if visible)
+  1. **Medicine Information**
+    - Medicine Name
+    - Form (e.g., Tablet, Syrup, Injection)
+    - Active Ingredient(s)
+    - Dosage
 
-Return the result in the following format:
-Medicine: ...
-Form: ...
-Active Ingredients: ...
-Dosage: ...
+  2. **Nutrition Facts** (if present)
+    - Serving Size
+    - Calories
+    - Total Fat
+    - Carbohydrates
+    - Protein
+    - Sugar
+    - Any additional relevant nutrients
 
-If any information is not visible or unclear in the image, mark it as "Not found".
-''';
+  3. **Synthetic Ingredients** (if any)
+    - List all synthetic chemicals or artificial ingredients mentioned
+    - Mark them clearly under a separate section
+
+  Return the result in the following format (use "Not found" where information is missing):
+
+  ---
+  **Medicine Information**
+  Medicine: ...
+  Form: ...
+  Active Ingredients: ...
+  Dosage: ...
+
+  **Nutrition Facts**
+  Serving Size: ...
+  Calories: ...
+  Total Fat: ...
+  Carbohydrates: ...
+  Protein: ...
+  Sugar: ...
+  Other Nutrients: ...
+
+  **Synthetic Ingredients**
+  - Ingredient 1
+  - Ingredient 2
+  ---
+  ''';
 
       final body = jsonEncode({
         'model': 'gpt-4o',
@@ -1048,76 +1151,128 @@ If any information is not visible or unclear in the image, mark it as "Not found
             ],
           },
         ],
-        'max_tokens': 300,
+        'max_tokens': 800,
       });
 
       final response = await http.post(url, headers: headers, body: body);
 
-      // print('response body ----- ${jsonDecode(response.body)}');
-
       if (response.statusCode == 200) {
-        var responseData = jsonDecode(response.body);
+        final responseData = jsonDecode(response.body);
         final content =
             responseData['choices'][0]['message']['content'] as String;
 
-        // print('content ----- $content');
+        if (kDebugMode) {
+          print('🧠 GPT Extracted Response:\n$content');
+        }
 
-        // print('usage ----- ${responseData['usage']}');
-        // var usagesToken = responseData['usage'];
-        // inputToken += usagesToken['prompt_tokens'];
-        // outputToken += usagesToken['completion_tokens'];
-
-        // print('inputToken --- 1 --- $inputToken');
-        // print('outputToken --- 1 --- $outputToken');
-
-        final lines = content.split('\n');
         final Map<String, String> fields = {};
+        String currentSection = '';
 
-        for (var line in lines) {
+        for (var line in content.split('\n')) {
+          line = line.trim();
+          if (line.isEmpty) continue;
+
+          // Detect section headers like "**Medicine Information**"
+          if (line.startsWith('**') && line.endsWith('**')) {
+            currentSection = line.replaceAll('*', '').trim();
+            continue;
+          }
+
           if (line.contains(':')) {
             final parts = line.split(':');
             if (parts.length >= 2) {
-              final key = parts[0].trim();
+              final key = '${currentSection}_${parts[0].trim()}';
               final value = parts.sublist(1).join(':').trim();
+
               if (value.toLowerCase() != 'not found' && value.isNotEmpty) {
                 fields[key] = value;
               }
             }
+          } else if (currentSection == 'Synthetic Ingredients' &&
+              line.startsWith('-')) {
+            final ingredient = line.substring(1).trim();
+            if (ingredient.isNotEmpty) {
+              fields.update(
+                'Synthetic Ingredients',
+                (existing) => '$existing\n$ingredient',
+                ifAbsent: () => ingredient,
+              );
+            }
           }
         }
-
-        // print('felds -----$fields');
 
         return fields.isNotEmpty ? fields : null;
       } else {
         throw Exception(
-          'Failed to extract from image: ${response.statusCode}\n${response.body}',
+          '❌ Failed to extract from image: ${response.statusCode}\n${response.body}',
         );
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Extraction error: $e');
+        print('🛑 Extraction error: $e');
       }
       return null;
     }
   }
 
-  String _encodeImageToBase64(String imagePath) {
-    final bytes = File(imagePath).readAsBytesSync();
-    return base64Encode(bytes);
+  Future<String?> _encodeImageToBase64(String imagePath) async {
+    try {
+      final bytes = await File(imagePath).readAsBytes();
+      return base64Encode(bytes);
+    } catch (e) {
+      if (kDebugMode) {
+        print('🛑 Image Encoding Failed: $e');
+      }
+      return null;
+    }
   }
 
   String _formatExtractedText(Map<String, String> data) {
-    final buffer = StringBuffer();
-    if (data.containsKey('Medicine')) {
-      buffer.writeln('Medicine: ${data['Medicine']}');
+    StringBuffer buffer = StringBuffer();
+
+    void addSection(String title) {
+      buffer.writeln('---\n$title');
     }
-    if (data.containsKey('Form')) buffer.writeln('Form: ${data['Form']}');
-    if (data.containsKey('Active Ingredients')) {
-      buffer.writeln('Active Ingredients: ${data['Active Ingredients']}');
-    }
-    if (data.containsKey('Dosage')) buffer.writeln('Dosage: ${data['Dosage']}');
-    return buffer.toString().trim();
+
+    addSection('Medicine Information');
+    buffer.writeln(
+      'Medicine: ${data['Medicine Information_Medicine'] ?? 'Not found'}',
+    );
+    buffer.writeln('Form: ${data['Medicine Information_Form'] ?? 'Not found'}');
+    buffer.writeln(
+      'Active Ingredients: ${data['Medicine Information_Active Ingredients'] ?? 'Not found'}',
+    );
+    buffer.writeln(
+      'Dosage: ${data['Medicine Information_Dosage'] ?? 'Not found'}',
+    );
+
+    addSection('Nutrition Facts');
+    buffer.writeln(
+      'Serving Size: ${data['Nutrition Facts_Serving Size'] ?? 'Not found'}',
+    );
+    buffer.writeln(
+      'Calories: ${data['Nutrition Facts_Calories'] ?? 'Not found'}',
+    );
+    buffer.writeln(
+      'Total Fat: ${data['Nutrition Facts_Total Fat'] ?? 'Not found'}',
+    );
+    buffer.writeln(
+      'Carbohydrates: ${data['Nutrition Facts_Carbohydrates'] ?? 'Not found'}',
+    );
+    buffer.writeln(
+      'Protein: ${data['Nutrition Facts_Protein'] ?? 'Not found'}',
+    );
+    buffer.writeln('Sugar: ${data['Nutrition Facts_Sugar'] ?? 'Not found'}');
+    buffer.writeln(
+      'Other Nutrients: ${data['Nutrition Facts_Other Nutrients'] ?? 'Not found'}',
+    );
+
+    addSection('Synthetic Ingredients');
+    buffer.writeln(data['Synthetic Ingredients'] ?? 'None');
+
+    buffer.writeln('---');
+
+    return buffer.toString();
   }
 
   Future<void> showNextVersion() async {
@@ -1307,141 +1462,104 @@ If any information is not visible or unclear in the image, mark it as "Not found
     await prefs.setInt(_key, index);
   }
 
-  Future<void> sendMessage({int? iId, bool isReload = false}) async {
-    // if (remainingToken == 0 && !isReferenceUser) {
-    //   flutterToastCenter("No tokens available. Renew your subscription to continue.");
-    //   return;
-    // }
+  String combineExtractedText(Map<String, String> extractedText) {
+    final buffer = StringBuffer();
 
+    extractedText.forEach((key, value) {
+      buffer.writeln('$key: $value');
+    });
+
+    return buffer.toString();
+  }
+
+  Future<void> sendMessage({int? iId, bool isReload = false}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       Get.to(LoginScreen());
+      return;
     }
 
     await setCurrentIndex(1);
-
     setState(() {
       freePlanCurrentIndex = 1;
     });
 
     FocusManager.instance.primaryFocus?.unfocus();
-    if (Utility.promptController.text != "" ||
-        _pickedFile != null ||
-        Utility.promptController.text.isNotEmpty) {
+
+    if (Utility.promptController.text.isNotEmpty || _pickedFile != null) {
       scrollController.jumpTo(scrollController.position.maxScrollExtent);
       String question = Utility.promptController.text;
-      if (question == question1) {
-        isQuestion1 = true;
-      }
-      if (question == question2) {
-        isQuestion2 = true;
-      }
 
-      if (question != question1 && question != question2) {
-        isQuestion1 = false;
-        isQuestion2 = false;
-      }
+      // Track specific questions
+      isQuestion1 = question == question1;
+      isQuestion2 = question == question2;
+
       Utility.isType = true;
       int id = 0;
 
       try {
-        if (Utility.isNewChat) {
-          id = 1;
-        } else {
-          id = (iId ?? 0) > 0 ? iId ?? 0 : Utility.chatHistoryList.last.id;
-        }
+        id =
+            Utility.isNewChat
+                ? 1
+                : (iId ?? 0) > 0
+                ? iId!
+                : Utility.chatHistoryList.last.id;
       } catch (e) {
-        if (kDebugMode) {
-          print(e);
-        }
+        if (kDebugMode) print(e);
       }
+
       isShowPopup = false;
-      Utility.promptController.text = "";
+      Utility.promptController.clear();
       containerHeight.value = 55.0;
       getData = true;
 
       Map<String, String>? extractedText;
 
-      // print('isReload >>>> ${isReload}');
-      // print('_pickedFile >>>> $_pickedFile');
-      // print(
-      // 'is that condition is true........ >>>> ${!isReload && _pickedFile != null}',
-      // );
-
       if (!isReload && _pickedFile != null) {
-        // if (remainingToken <= 10000  && !isReferenceUser) {
-        //   flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
-        //   return;
-        // }
+        extractedText = await extractProductLabelData(_pickedFile!.path);
 
-        // Extract wording from image
-        extractedText = await _extractMedicineFromImage(_pickedFile!.path);
+        print('extractedText >>>>>>> $extractedText');
 
-        // print('extractedText >>>>> ${extractedText}');
+        if (kDebugMode && extractedText != null) {
+          print('🧪 Extracted Text:\n${jsonEncode(extractedText)}');
+        }
 
-        if (extractedText != null
-        // extractedText.containsKey('Medicine') &&
-        // extractedText['Medicine'] != null &&
-        // extractedText['Medicine']!.trim().isNotEmpty
-        ) {
-          // Only show and edit 'Medicine' field
-          String? initialMedicineName = '';
+        if (extractedText != null) {
+          String? initialName =
+              extractedText['Medicine Information_Medicine'] ??
+              extractedText['Medicine Information_Active Ingredients'] ??
+              '';
 
-          if (extractedText['Medicine'] != null) {
-            initialMedicineName = extractedText['Medicine'].toString();
-          } else if (extractedText['Active Ingredients'] != null) {
-            initialMedicineName = extractedText['Active Ingredients'];
-          }
+          final combinedText =
+              extractedText != null ? combineExtractedText(extractedText) : '';
 
-          // ignore: no_leading_underscores_for_local_identifiers
           TextEditingController _medicineController = TextEditingController(
-            text: initialMedicineName,
+            text: combinedText,
           );
 
-          // print('Medicine name. >>>>>>> ${_medicineController}');
-
           bool? userConfirmed = await showDialog<bool>(
-            // ignore: use_build_context_synchronously
             context: context,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: const Text("Confirm Synthetics Name"),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "We've detected the medicine name from your image. You can edit it below if needed:",
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _medicineController,
-                      decoration: const InputDecoration(
-                        labelText: "Medicine Name",
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      "Is this correct?",
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ],
+                title: const Text("Confirm Extracted Text"),
+                content: TextField(
+                  controller: _medicineController,
+                  maxLines: null, // allow multiline and expand
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: "Extracted Text (Edit if needed)",
+                  ),
                 ),
                 actions: [
                   TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(false);
-                    },
+                    onPressed: () => Navigator.of(context).pop(false),
                     child: const Text(
                       "No, Try Again",
                       style: TextStyle(color: Colors.redAccent),
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(true);
-                    },
+                    onPressed: () => Navigator.of(context).pop(true),
                     child: const Text("Yes, That’s Correct"),
                   ),
                 ],
@@ -1458,47 +1576,41 @@ If any information is not visible or unclear in the image, mark it as "Not found
               });
             }
             flutterToastCenter("Image rejected. Please upload another one.");
-            Utility.promptController.clear();
             return;
           }
 
-          // Use the edited medicine name as the question
-          String editedMedicine = _medicineController.text.trim();
           question =
-              editedMedicine.isNotEmpty
-                  ? editedMedicine
+              _medicineController.text.trim().isNotEmpty
+                  ? _medicineController.text.trim()
                   : 'Synthetics analyzed';
         } else {
-          if (mounted) {
-            await showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: const Text("Extraction Failed"),
-                  content: const Text(
-                    "We couldn't extract any medication details from the image you provided. "
-                    "Please upload a clearer image or try a different one.",
+          await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Extraction Failed"),
+                content: const Text(
+                  "We couldn't extract any medication details from the image you provided. "
+                  "Please upload a clearer image or try a different one.",
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text("OK"),
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text("OK"),
-                    ),
-                  ],
-                );
-              },
-            );
+                ],
+              );
+            },
+          );
 
+          if (mounted) {
             setState(() {
               _pickedFile = null;
               getData = false;
               Utility.isType = false;
             });
-            Utility.promptController.clear();
-            return;
           }
+          return;
         }
 
         Utility.chatHistoryList.add(
@@ -1512,7 +1624,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
             imagePath: _pickedFile?.path ?? '',
             imageText:
                 extractedText != null
-                    ? extractedText['Medicine'] ?? 'Synthetics analyzed'
+                    ? _formatExtractedText(extractedText)
                     : null,
           ),
         );
@@ -1548,7 +1660,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
           'message': jsonEncode(Utility.chatHistoryList),
           'CurrentDateAndTime': DateTime.now().millisecondsSinceEpoch,
           'imagePath': _pickedFile?.path ?? '',
-          'imageText': extractedText,
+          'imageText': extractedText != null ? jsonEncode(extractedText) : null,
         });
       }
 
@@ -1558,55 +1670,26 @@ If any information is not visible or unclear in the image, mark it as "Not found
         });
       }
 
-      for (int i = 0; i < Utility.chatHistoryList.length; i++) {
-        bool isQuestions1 = Utility.chatHistoryList[i].message == question1;
-        bool isQuestions2 = Utility.chatHistoryList[i].message == question2;
-        if (kDebugMode) {
-          // print('isQuestions $isQuestions1');
-        }
+      prompt.clear();
+      for (var chat in Utility.chatHistoryList) {
+        String? content = chat.imageText ?? chat.message;
+        String promptSuffix =
+            isQuestion1
+                ? remoteConfig.getString('prompt_view_questions_2_0_0')
+                : isQuestion2
+                ? remoteConfig.getString('prompt_view_questions2_2_0_0')
+                : (isSubscribe || isReferenceUser
+                    ? remoteConfig.getString(
+                      'prompt_view_premium_version_2_0_0',
+                    )
+                    : remoteConfig.getString('free_prompt_version_2_0_1'));
 
-        if (kDebugMode) {
-          // print('Utility.chatHistoryList[i].message ----- ${Utility.chatHistoryList[i].message}');
-        }
-
-        if (Utility.chatHistoryList[i].message != '' &&
-            Utility.chatHistoryList[i].message != 'ABC') {
-          prompt.add({
-            'content':
-                '${Utility.chatHistoryList[i].message} '
-                '${isQuestions1
-                    ? remoteConfig.getString('prompt_view_questions_2_0_0')
-                    : isQuestions2
-                    ? remoteConfig.getString('prompt_view_questions2_2_0_0')
-                    : (isSubscribe || isReferenceUser ? remoteConfig.getString('prompt_view_premium_version_2_0_0') : remoteConfig.getString('free_prompt_version_2_0_1'))}, not html format',
-            'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant',
-          });
-        }
-
-        if (Utility.chatHistoryList[i].imagePath != null &&
-            Utility.chatHistoryList[i].imagePath!.isNotEmpty &&
-            Utility.chatHistoryList[i].imageText != null) {
-          String cleanedText =
-              Utility.chatHistoryList[i].imageText!
-                  .replaceAll('\n\n', '')
-                  .replaceAll('\n', '')
-                  .trim();
-
-          prompt.add({
-            // 'content': '${Utility.chatHistoryList[i].message} with valid citation',
-            'content':
-                '$cleanedText ${isQuestions1
-                    ? remoteConfig.getString('prompt_view_questions_2_0_0')
-                    : isQuestions2
-                    ? remoteConfig.getString('prompt_view_questions2_2_0_0')
-                    : (isSubscribe || isReferenceUser ? remoteConfig.getString('prompt_view_premium_version_2_0_0') : remoteConfig.getString('free_prompt_version_2_0_1'))}, not html format',
-            'role': Utility.chatHistoryList[i].isSender ? 'user' : 'assistant',
-          });
-        }
+        prompt.add({
+          'content': '$content $promptSuffix, not html format',
+          'role': chat.isSender ? 'user' : 'assistant',
+        });
       }
-      if (kDebugMode) {
-        // print('prompt  ${purchaseController.isSubscribe} $prompt');
-      }
+
       try {
         final apiKey = remoteConfig.getString('gpt_token');
         final url = Uri.parse('https://api.openai.com/v1/responses');
@@ -1625,78 +1708,17 @@ If any information is not visible or unclear in the image, mark it as "Not found
           'input': prompt,
         });
 
-        // final count = await TokenizerService().countTokens(jsonEncode(body), model: "gpt-4");
-        // print("Token count: $count");
-
-        // if (remainingToken <= count && !isReferenceUser) {
-        //   flutterToastCenter('Your token balance is too low. Please update your subscription to purchase more tokens.');
-        //   return;
-        // }
-
-        // body['max_tokens'] = remainingToken - count;
-
-        if (kDebugMode) {
-          // print('111111111111 $prompt');
-        }
-
         final response = await http.post(url, headers: headers, body: body);
-        if (kDebugMode) {
-          // print('response ${response.body}');
-        }
-
-        if (kDebugMode) {
-          // print('response >>>> ${jsonDecode(response.body)}');
-        }
 
         if (response.statusCode == 200) {
-          var responseData = jsonDecode(response.body);
-
-          // double calcCost(int inputTokens, int outputTokens) {
-          //   // gpt-4.1 rates
-          //   const double inputRate = 2.0 / 1000000;  // $2 per 1M
-          //   const double outputRate = 8.0 / 1000000; // $8 per 1M
-
-          //   return (inputTokens * inputRate) + (outputTokens * outputRate);
-          // }
-
-          // final usages = responseData['usage'];
-
-          // final cost = calcCost(usages['input_tokens'], usages['output_tokens']);
-          // print("This request cost: \$${cost.toStringAsFixed(4)}");
-          // print('usages ------- ${responseData['usage']}');
-
-          // final remainingMoney = 4.99 - cost;
-          // print('remainingMoney ----- $remainingMoney');
-
-          if (isSubscribe) {
-            setState(() {
-              remainingToken = remainingToken - 1;
-            });
-
-            if (remainingToken == 0) {
-              setState(() {
-                isSubscribe = false;
-              });
-            }
-
-            Get.snackbar("Success", "Your remaining token is $remainingToken");
-            print('remainingToken ------ $remainingToken');
-
-            await UserModel.update(loginUser!.uid, {
-              "remainingToken": remainingToken,
-              "isSubscribe": isSubscribe,
-            });
-          }
-
+          final responseData = jsonDecode(response.body);
           String answer = responseData['output'][0]['content'][0]['text'];
 
-          String date = DateTime.now().toString();
-          id = Utility.isNewChat ? 1 : Utility.chatHistoryList.last.id;
           Utility.chatHistoryList.add(
             ChatListHistoryModel(
               id: id,
               message: answer,
-              currentDateAndTime: date,
+              currentDateAndTime: DateTime.now().toString(),
               isSender: false,
               isAnimation: false,
               isGpt4: isSelected,
@@ -1705,11 +1727,23 @@ If any information is not visible or unclear in the image, mark it as "Not found
 
           Utility.isNewChat = false;
           getData = false;
-          if (!isSubscribe) {
-            isShowPopup = true;
+          if (!isSubscribe) isShowPopup = true;
+          Utility.isType = false;
+
+          if (isSubscribe) {
+            setState(() {
+              remainingToken -= 1;
+            });
+            if (remainingToken == 0) isSubscribe = false;
+
+            await UserModel.update(loginUser!.uid, {
+              "remainingToken": remainingToken,
+              "isSubscribe": isSubscribe,
+            });
+
+            Get.snackbar("Success", "Your remaining token is $remainingToken");
           }
 
-          Utility.isType = false;
           if (mounted) {
             setState(() {
               scrollController.jumpTo(
@@ -1717,6 +1751,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
               );
             });
           }
+
           DBHelper.updateData(
             jsonEncode(Utility.chatHistoryList),
             Utility.isSenderId,
@@ -1724,6 +1759,7 @@ If any information is not visible or unclear in the image, mark it as "Not found
             '',
             extractedText != null ? _formatExtractedText(extractedText) : null,
           );
+
           setState(() {
             _pickedFile = null;
           });
@@ -1734,13 +1770,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
         }
       } catch (e) {
         if (kDebugMode) {
-          print('-----------------------------------');
-          print('error >>>> $e');
-          print('-----------------------------------');
+          print('🔥 Error in API request: $e');
         }
-        // flutterToastCenter('Something is heaped please try again');
-        Utility.isNewChat = false;
-        // Utility.chatHistoryList[0] = ChatListHistoryModel(id: id, message: 'Server Timed Out. Please copy medications, and enter again', currentDateAndTime: DateTime.now().toString(), isSender: false, isAnimation: false, isGpt4: isSelected);
+
         Utility.chatHistoryList.add(
           ChatListHistoryModel(
             id: id,
@@ -1752,18 +1784,19 @@ If any information is not visible or unclear in the image, mark it as "Not found
             isGpt4: isSelected,
           ),
         );
-        DBHelper.updateData(
+
+        await DBHelper.updateData(
           jsonEncode(Utility.chatHistoryList),
           Utility.isSenderId,
           DateTime.now().millisecondsSinceEpoch.toString(),
           '',
           extractedText != null ? _formatExtractedText(extractedText) : null,
         );
+
         getData = false;
-        if (!isSubscribe) {
-          isShowPopup = true;
-        }
+        if (!isSubscribe) isShowPopup = true;
         Utility.isType = false;
+
         if (mounted) {
           setState(() {
             scrollController.jumpTo(scrollController.position.maxScrollExtent);
@@ -1771,13 +1804,9 @@ If any information is not visible or unclear in the image, mark it as "Not found
         }
       }
     } else if (getData) {
-      if (mounted) {
-        flutterToastCenter("Wait few Seconds...");
-      }
+      if (mounted) flutterToastCenter("Wait few Seconds...");
     } else {
-      if (mounted) {
-        flutterToastCenter("Write any one question.");
-      }
+      if (mounted) flutterToastCenter("Write any one question.");
     }
   }
 
@@ -1941,7 +1970,10 @@ If any information is not visible or unclear in the image, mark it as "Not found
                                       ),
                                     ),
                                   if (imagePath != null && imagePath.isNotEmpty)
-                                    8.toDouble().hs,
+                                    const SizedBox(
+                                      height: 8,
+                                    ), // Instead of 8.toDouble().hs
+                                  // GRADIENT STYLE
                                   if (isGradiant)
                                     appText(
                                       title: message,
@@ -1952,88 +1984,133 @@ If any information is not visible or unclear in the image, mark it as "Not found
                                       fontSize: Utility.fontSize,
                                       color: AppColor.white,
                                     )
+                                  // HTML STYLE
                                   else if (message.startsWith('<'))
-                                    HtmlWidget(
-                                      message,
-                                      textStyle: TextStyle(
-                                        color: AppColor.white,
-                                        fontFamily: 'gelasio',
-                                        decorationColor: AppColor.white,
+                                    Theme(
+                                      data: Theme.of(context).copyWith(
+                                        textTheme: Theme.of(
+                                          context,
+                                        ).textTheme.apply(
+                                          bodyColor: AppColor.white,
+                                          displayColor: AppColor.white,
+                                        ),
                                       ),
-                                      enableCaching: false,
-                                      onTapUrl: (url) async {
-                                        if (kDebugMode) {
-                                          // print('onLinkTap $url');
-                                        }
-                                        return await launchUrl(Uri.parse(url));
-                                      },
+                                      child: HtmlWidget(
+                                        message,
+                                        textStyle: TextStyle(
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                      Brightness.dark
+                                                  ? AppColor.white
+                                                  : Colors.black,
+                                          fontFamily: 'gelasio',
+                                        ),
+                                        customStylesBuilder: (element) {
+                                          final isDark =
+                                              Theme.of(context).brightness ==
+                                              Brightness.dark;
+                                          return {
+                                            'color':
+                                                isDark ? '#FFFFFF' : '#000000',
+                                            'font-family': 'gelasio',
+                                          };
+                                        },
+                                        onTapUrl: (url) async {
+                                          return await launchUrl(
+                                            Uri.parse(url),
+                                          );
+                                        },
+                                      ),
                                     )
+                                  // MARKDOWN STYLE
                                   else
-                                    Selectable(
-                                      showSelection: true,
-                                      selectWordOnDoubleTap: true,
-                                      selectWordOnLongPress: true,
-                                      selectionColor: Colors.blue.withValues(
-                                        alpha: 0.3,
+                                    Theme(
+                                      data: Theme.of(context).copyWith(
+                                        textTheme: Theme.of(
+                                          context,
+                                        ).textTheme.apply(
+                                          bodyColor: AppColor.white,
+                                          displayColor: AppColor.white,
+                                        ),
                                       ),
-                                      child: MarkdownBody(
-                                        data: message,
-                                        softLineBreak: true,
-                                        extensionSet: md.ExtensionSet(
-                                          md
-                                              .ExtensionSet
-                                              .gitHubWeb
-                                              .blockSyntaxes,
-                                          <md.InlineSyntax>[
-                                            md.EmojiSyntax(),
-                                            ...md
+                                      child: Selectable(
+                                        showSelection: true,
+                                        selectWordOnDoubleTap: true,
+                                        selectWordOnLongPress: true,
+                                        selectionColor: Colors.blue.withAlpha(
+                                          80,
+                                        ),
+                                        child: MarkdownBody(
+                                          data: message,
+                                          softLineBreak: true,
+                                          extensionSet: md.ExtensionSet(
+                                            md
                                                 .ExtensionSet
                                                 .gitHubWeb
-                                                .inlineSyntaxes,
-                                          ],
-                                        ),
-                                        styleSheet:
-                                            MarkdownStyleSheet.fromTheme(
-                                              Theme.of(context),
-                                            ).copyWith(
-                                              p: TextStyle(
-                                                fontSize: 14,
-                                                color: AppColor.white,
-                                                fontFamily: 'gelasio',
-                                              ),
-                                              a: TextStyle(
-                                                fontSize: 14,
-                                                color: AppColor.white,
-                                                fontFamily: 'gelasio',
-                                                decoration:
-                                                    TextDecoration.underline,
-                                                fontWeight: FontWeight.w400,
-                                                decorationColor: AppColor.white
-                                                    .withValues(alpha: 0.5),
-                                              ),
-                                              tableHead: TextStyle(
-                                                fontSize: 14,
-                                                color: AppColor.white,
-                                                fontFamily: 'gelasio',
-                                                decoration:
-                                                    TextDecoration.underline,
-                                                fontWeight: FontWeight.w400,
-                                                decorationColor: AppColor.white
-                                                    .withValues(alpha: 0.5),
-                                              ),
-                                              tableBody: TextStyle(
-                                                fontSize: 14,
-                                                color: AppColor.white,
-                                                fontFamily: 'gelasio',
-                                                decoration:
-                                                    TextDecoration.underline,
-                                                fontWeight: FontWeight.w400,
-                                                decorationColor: AppColor.white
-                                                    .withValues(alpha: 0.5),
-                                              ),
+                                                .blockSyntaxes,
+                                            <md.InlineSyntax>[
+                                              md.EmojiSyntax(),
+                                              ...md
+                                                  .ExtensionSet
+                                                  .gitHubWeb
+                                                  .inlineSyntaxes,
+                                            ],
+                                          ),
+                                          styleSheet: MarkdownStyleSheet(
+                                            p: TextStyle(
+                                              fontSize: 14,
+                                              color: AppColor.white,
+                                              fontFamily: 'gelasio',
                                             ),
-                                        shrinkWrap: true,
-                                        selectable: false,
+                                            a: const TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.lightBlueAccent,
+                                              decoration:
+                                                  TextDecoration.underline,
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                            h1: TextStyle(
+                                              fontSize: 18,
+                                              color: AppColor.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            h2: TextStyle(
+                                              fontSize: 16,
+                                              color: AppColor.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            h3: TextStyle(
+                                              fontSize: 15,
+                                              color: AppColor.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            code: TextStyle(
+                                              fontSize: 13,
+                                              color: AppColor.white,
+                                              backgroundColor: Colors.black26,
+                                            ),
+                                            blockquote: TextStyle(
+                                              fontSize: 14,
+                                              color: AppColor.white,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                            listBullet: TextStyle(
+                                              fontSize: 14,
+                                              color: AppColor.white,
+                                            ),
+                                            tableHead: TextStyle(
+                                              fontSize: 14,
+                                              color: AppColor.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            tableBody: TextStyle(
+                                              fontSize: 14,
+                                              color: AppColor.white,
+                                            ),
+                                          ),
+                                          shrinkWrap: true,
+                                          selectable: false,
+                                        ),
                                       ),
                                     ),
                                 ],
