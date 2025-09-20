@@ -11,6 +11,7 @@ import 'package:my_deficiencies/common/common.dart';
 import 'package:my_deficiencies/common/dialog/dialog_widget.dart';
 import 'package:my_deficiencies/common/dialog/progress_dialog.dart';
 import 'package:my_deficiencies/model/user_model.dart';
+import 'package:my_deficiencies/services/auth_service.dart';
 import 'package:my_deficiencies/ui/home/home_screen.dart';
 import 'package:my_deficiencies/ui/sign_up/sign_up_screen.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
@@ -41,7 +42,18 @@ class _LoginScreenState extends State<LoginScreen> {
     if (kDebugMode) {
       print('previousRoute $previousRoute');
     }
+    isUserLogin();
     super.initState();
+  }
+
+  void isUserLogin() async {
+    bool loggedIn = await AuthUtils.isLoggedIn();
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (loggedIn && user != null) {
+      Get.offAll(HomeScreen());
+      return;
+    }
   }
 
   void login() async {
@@ -61,15 +73,11 @@ class _LoginScreenState extends State<LoginScreen> {
               email: _emailController.text.trim(),
               password: _passwordController.text.trim(),
             );
-        // Fluttertoast.showToast(msg: "Login Successful");
         progressDialog.close();
 
-        String uid = userCredential.user!.uid; // 👈 UID here
+        String uid = userCredential.user!.uid;
         String email = userCredential.user!.email ?? "";
         final userData = await UserModel.getById(uid);
-        print('userData ---- $userData');
-
-        SharedPreferences preferences = await SharedPreferences.getInstance();
 
         final Map<String, dynamic> userMap = {
           "uid": uid,
@@ -83,31 +91,22 @@ class _LoginScreenState extends State<LoginScreen> {
           "expiryDate": userData?.expiryDate.toString(),
         };
 
-        // convert to JSON
-        final String userJson = jsonEncode(userMap);
-
-        // save into SharedPreferences as one string
-        await preferences.setString("userData", userJson);
+        // ✅ Save user in SharedPreferences
+        await AuthUtils.saveUser(userMap);
 
         Get.dialog(
           name: '/DialogWidgetSuccessfully',
           DialogWidget(
             onTap: () {
-              if (previousRoute != '/PremiumScreen' &&
-                  previousRoute != '/SettingScreen') {
-                Get.offAll(HomeScreen());
-              } else {
-                Get.back();
-              }
+              Get.offAll(HomeScreen());
             },
             imageUrl: ImageData.icSuccess,
             title: 'Successfully\nLogin',
             description:
-                'Congratulations, your account registration is successfully',
+                'Congratulations, your account login is successful',
             btnText: 'Continue',
           ),
         );
-        // Navigate to Home or Dashboard
       } on FirebaseAuthException catch (e) {
         progressDialog.close();
         if (kDebugMode) {
@@ -134,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
             message = 'Network error. Check your internet connection.';
             break;
           case 'invalid-credential':
-            message = 'Please Enter valid credential';
+            message = 'Please enter valid credentials.';
             break;
           default:
             message = 'Login failed. ${e.message}';
@@ -143,6 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
 
   Future<void> signInWithApple() async {
     try {

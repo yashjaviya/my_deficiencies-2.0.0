@@ -115,7 +115,11 @@ class DBHelper {
   ) async {
     final db = await DBHelper.database();
     if (kDebugMode) {
-      print('updateData $id');
+      print('id >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> $id');
+      print('currentDateAndTime >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> $currentDateAndTime');
+      print('message >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> $message');
+      print('userId >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> $userId');
+
     }
     await db.update(
       "ChatListHistory",
@@ -124,8 +128,8 @@ class DBHelper {
         'imagePath': imagePath ?? '',
         'imageText': imageText ?? '',
       },
-      where: 'id = ? AND currentDateAndTime = ? AND userId = ?',
-      whereArgs: [id, currentDateAndTime, userId],
+      where: 'id = ? AND userId = ?',
+      whereArgs: [id, userId],
     );
   }
 

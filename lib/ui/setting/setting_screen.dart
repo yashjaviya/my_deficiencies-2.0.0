@@ -14,6 +14,7 @@ import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
 import 'package:my_deficiencies/model/reference_model.dart';
 import 'package:my_deficiencies/model/user_model.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
+import 'package:my_deficiencies/services/auth_service.dart';
 import 'package:my_deficiencies/ui/login/login_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +38,7 @@ class _SettingScreenState extends State<SettingScreen> {
     await prefs.clear();
     await FirebaseAuth.instance.signOut();
     _auth.signOut();
+    await AuthUtils.logout();
 
     Get.offAll(LoginScreen());
   }

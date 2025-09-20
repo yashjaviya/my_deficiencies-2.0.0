@@ -17,6 +17,7 @@ import 'package:my_deficiencies/model/chat_gpt_d_b_model.dart';
 import 'package:my_deficiencies/model/reference_model.dart';
 import 'package:my_deficiencies/model/user_model.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
+import 'package:my_deficiencies/services/auth_service.dart';
 import 'package:my_deficiencies/ui/chat/chat_screen.dart';
 import 'package:my_deficiencies/ui/history/history_screen.dart';
 import 'package:my_deficiencies/ui/login/login_screen.dart';
@@ -54,8 +55,10 @@ class _HomeScreenState extends State<HomeScreen> {
       isReferred = userMap["isReferenceUser"] ?? false;
     }
 
+    bool loggedIn = await AuthUtils.isLoggedIn();
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+
+    if (!loggedIn || user == null) {
       Get.offAll(LoginScreen());
       return;
     }

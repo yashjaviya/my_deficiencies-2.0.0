@@ -74,18 +74,58 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
       return GestureDetector(
         onTap: () async {
-          Utility.chatHistoryList = chatGptDbModel.message ?? [];
-          Utility.isSenderId = chatGptDbModel.id;
-          Utility.isNewChat = false;
+          // 🔎 Step 1: Fetch raw DB row
+          final dbData = await DBHelper.getData(chatGptDbModel.id, userID);
 
-          if (kDebugMode) {
-            print('ChatScreen ${await DBHelper.getData(chatGptDbModel.id, userID)}');
+          print("========================================");
+          print("DB RAW DATA >>>>> $dbData");
+          print("========================================");
+
+          if (dbData != null && dbData.isNotEmpty) {
+            // 🔎 Step 2: Decode into ChatGptDbModel
+            final chatGptModel = ChatGptDbModel.fromJson(dbData.first);
+
+            print("Decoded ChatGptDbModel:");
+            print("  id: ${chatGptModel.id}");
+            print("  title: ${chatGptModel.title}");
+            // print("  userId: ${chatGptModel.userId}");
+            print("  CurrentDateAndTime: ${chatGptModel.currentDateAndTime}");
+            print("  message count: ${chatGptModel.message?.length ?? 0}");
+            print("----------------------------------------");
+
+            // 🔎 Step 3: Dump each message in history
+            if (chatGptModel.message != null) {
+              for (int i = 0; i < chatGptModel.message!.length; i++) {
+                final msg = chatGptModel.message![i];
+                print("Message [$i]");
+                print("  id: ${msg.id}");
+                print("  userId: ${msg.userId}");
+                print("  message: ${msg.message}");
+                print("  date: ${msg.currentDateAndTime}");
+                print("  isSender (user?): ${msg.isSender}");
+                print("  isGpt4: ${msg.isGpt4}");
+                print("  imagePath: ${msg.imagePath}");
+                print("  imageText: ${msg.imageText}");
+                print("  isDisplayButton: ${msg.isDisplayButton}");
+                print("----------------------------------------");
+              }
+            }
+
+            // 🔎 Step 4: Store in Utility
+            Utility.chatHistoryList = chatGptModel.message ?? [];
+            Utility.isSenderId = chatGptModel.id;
+            Utility.isNewChat = false;
+
+            print("✅ Loaded chat history count: ${Utility.chatHistoryList.length}");
+
+            Get.to(ChatScreen())!.then((value) {
+              if (mounted) setState(() {});
+            });
+          } else {
+            print("❌ No DB data found for id: ${chatGptDbModel.id}, userId: $userID");
           }
-
-          Get.to(ChatScreen())!.then((value) {
-            if (mounted) setState(() {});
-          });
         },
+
         child: Container(
           width: Get.width,
           margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),

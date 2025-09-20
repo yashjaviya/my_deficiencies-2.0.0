@@ -8,6 +8,7 @@ import 'package:my_deficiencies/color/app_color.dart';
 import 'package:my_deficiencies/firebase/realtime_database.dart';
 import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
+import 'package:my_deficiencies/services/auth_service.dart';
 import 'package:my_deficiencies/ui/home/home_screen.dart';
 import 'package:my_deficiencies/ui/login/login_screen.dart';
 import 'package:my_deficiencies/ui/welcome/welcome_screen1.dart';
@@ -46,25 +47,33 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void moveNext() {
     Future.delayed(
-      Duration(seconds: 5),
+      Duration(seconds: 2),
           () async {
-        _auth.signOut();
+        // _auth.signOut();
         SharedPreferences preferences = await SharedPreferences.getInstance();
         if (kDebugMode) {
           print('SharedPreferences ${preferences.getBool('isOnBoard')}');
         }
         bool isOnBoard = preferences.getBool('isOnBoard') ?? false;
-
-        print('_auth.currentUser ----- ${_auth.currentUser}');
+        var user = FirebaseAuth.instance.currentUser;
+        bool loggedIn = await AuthUtils.isLoggedIn();
 
         if (!isOnBoard) {
-          FirebaseAuth.instance.signOut();
+          // FirebaseAuth.instance.signOut();
+          // await AuthUtils.logout();
           Get.offAll(WelcomeScreen1());
-        } else if(_auth.currentUser == null) {
-          Get.offAll(LoginScreen());
-        } else {
-          Get.offAll(HomeScreen());
         }
+
+        FirebaseAuth.instance.authStateChanges().listen((User? tmpU) async {
+          print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> this is called ${loggedIn} ');
+          print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> this is called ${tmpU} ');
+          user = tmpU;
+          if(loggedIn && tmpU != null) {
+            Get.offAll(HomeScreen());
+          } else {
+            Get.offAll(LoginScreen());
+          }
+        });
       },
     );
   }

@@ -501,7 +501,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                         GestureDetector(
                                           onTap: () async {
                                             Uri uri = Uri.parse(
-                                              'https://stan.store/ScottEBurgess/p/15-min-discovery-call-5hmsx4tf',
+                                              'http://bit.ly/4n4ycJ5',
                                             );
                                             if (await canLaunchUrl(uri)) {
                                               launchUrl(uri);
@@ -1759,6 +1759,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               );
             });
           }
+
+          print('Utility.chatHistoryList 2 >> 2 >>2  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ${Utility.chatHistoryList}');
 
           DBHelper.updateData(
             jsonEncode(Utility.chatHistoryList),
