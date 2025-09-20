@@ -456,32 +456,32 @@ class _PremiumScreenState extends State<PremiumScreen> {
                                 ),
                               ),
 
-                              const SizedBox(height: 20),
+                              // const SizedBox(height: 20),
 
-                              /// Premium Features
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  setPremiumData(
-                                      '📊 4.', 'Cumulative Depletion Summary'),
-                                  setPremiumData('🧠 5.',
-                                      'Functional Physiological Implications'),
-                                  setPremiumData(
-                                      '⚡ 6.', 'Mitochondrial Burden Assessment'),
-                                  setPremiumData(
-                                      '💥 7.', 'Oxidative Stress Score'),
-                                  setPremiumData(
-                                      '⚖️ 8.', 'Copper–Iron Balance Analysis'),
-                                  setPremiumData('🌿 9.',
-                                      'Gut Microbiome & Dysbiosis Risk'),
-                                  setPremiumData(
-                                      '💨 10.', 'Oxygen Transport & ATP Output'),
-                                  setPremiumData(
-                                      '🧾 11.', 'Combined Summary Report'),
-                                  setPremiumData(
-                                      '🧭 12.', 'Recommendations & Next Steps'),
-                                ],
-                              ),
+                              // /// Premium Features
+                              // Column(
+                              //   crossAxisAlignment: CrossAxisAlignment.start,
+                              //   children: [
+                              //     setPremiumData(
+                              //         '📊 4.', 'Cumulative Depletion Summary'),
+                              //     setPremiumData('🧠 5.',
+                              //         'Functional Physiological Implications'),
+                              //     setPremiumData(
+                              //         '⚡ 6.', 'Mitochondrial Burden Assessment'),
+                              //     setPremiumData(
+                              //         '💥 7.', 'Oxidative Stress Score'),
+                              //     setPremiumData(
+                              //         '⚖️ 8.', 'Copper–Iron Balance Analysis'),
+                              //     setPremiumData('🌿 9.',
+                              //         'Gut Microbiome & Dysbiosis Risk'),
+                              //     setPremiumData(
+                              //         '💨 10.', 'Oxygen Transport & ATP Output'),
+                              //     setPremiumData(
+                              //         '🧾 11.', 'Combined Summary Report'),
+                              //     setPremiumData(
+                              //         '🧭 12.', 'Recommendations & Next Steps'),
+                              //   ],
+                              // ),
                             ],
                           ],
                         ),

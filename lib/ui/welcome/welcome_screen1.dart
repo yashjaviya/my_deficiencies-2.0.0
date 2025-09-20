@@ -5,6 +5,7 @@ import 'package:my_deficiencies/color/app_color.dart';
 import 'package:my_deficiencies/common/common.dart';
 import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
 import 'package:my_deficiencies/ui/welcome/welcome_screen2.dart';
+import 'package:my_deficiencies/ui/welcome/welcome_screen3.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
 
 class WelcomeScreen1 extends StatefulWidget {
@@ -86,8 +87,12 @@ class _WelcomeScreen1State extends State<WelcomeScreen1> {
                                       color: controller.isLight ? Color(0xFF0A0D14) : AppColor.white,
                                     ),
                                     5.toDouble().ws,
+                                    ImageWidget(
+                                      imageUrl: SvgAssetsData.onBoardingUnSelected,
+                                      color: controller.isLight ? Color(0xFF0A0D14) : AppColor.white,
+                                    ),
                                     // ImageWidget(imageUrl: SvgAssetsData.onBoardingUnSelected),
-                                    // 5.toDouble().hs,
+                                    5.toDouble().hs,
                                   ],
                                 ),
                               ),
@@ -136,7 +141,7 @@ class _WelcomeScreen1State extends State<WelcomeScreen1> {
                               Expanded(
                                 child: GestureDetector(
                                   onTap: () {
-                                    Get.to(WelcomeScreen2());
+                                    Get.to(PremiumHelperScreen());
                                   },
                                   child: Container(
                                     height: 45,

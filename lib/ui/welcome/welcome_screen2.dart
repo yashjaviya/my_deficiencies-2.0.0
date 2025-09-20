@@ -90,6 +90,11 @@ class _WelcomeScreen2State extends State<WelcomeScreen2> {
                                       ),
                                       5.toDouble().ws,
                                       ImageWidget(
+                                        imageUrl: SvgAssetsData.onBoardingUnSelected,
+                                        color: controller.isLight ? Color(0xFF0A0D14) : AppColor.white,
+                                      ),
+                                      5.toDouble().ws,
+                                      ImageWidget(
                                         imageUrl: SvgAssetsData.onBoardingSelected,
                                         color: controller.isLight ? Color(0xFF0A0D14) : AppColor.white,
                                       ),

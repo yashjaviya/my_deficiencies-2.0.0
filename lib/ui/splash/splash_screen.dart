@@ -62,6 +62,7 @@ class _SplashScreenState extends State<SplashScreen> {
           // FirebaseAuth.instance.signOut();
           // await AuthUtils.logout();
           Get.offAll(WelcomeScreen1());
+          return;
         }
 
         FirebaseAuth.instance.authStateChanges().listen((User? tmpU) async {
