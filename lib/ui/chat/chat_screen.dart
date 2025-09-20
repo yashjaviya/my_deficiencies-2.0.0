@@ -99,6 +99,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   num inputToken = 0;
   num outputToken = 0;
   String userID = '';
+  bool isAlreadyShowFirstQuestion = false;
 
   RemoteConfig remoteConfig = Get.put(RemoteConfig());
 
@@ -448,7 +449,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             !getData &&
                                     !Utility.isType &&
                                     Utility.chatHistoryList.isNotEmpty &&
-                                    Utility.chatHistoryList.length >= 2
+                                    Utility.chatHistoryList.length >= 2 &&
+                                    !isAlreadyShowFirstQuestion
                                 ? SingleChildScrollView(
                                   scrollDirection: Axis.horizontal,
                                   padding: EdgeInsets.only(
@@ -469,7 +471,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                                 Utility.promptController.text =
                                                     question1;
                                                 sendMessage();
-                                                setState(() {});
+                                                setState(() {
+                                                  isAlreadyShowFirstQuestion = true;
+                                                });
                                               },
                                               child: Container(
                                                 padding: EdgeInsets.symmetric(
@@ -914,6 +918,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                   onSubmitted: (value) {
                                     if (!getData) {
                                       sendMessage();
+
+                                      setState(() {
+                                        isAlreadyShowFirstQuestion = false;
+                                      });
                                     } else {
                                       flutterToastCenter("Analyzing...");
                                     }
@@ -1468,6 +1476,43 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     return buffer.toString();
   }
 
+  Future<String> categorizeQuestion(String question) async {
+    final apiKey = remoteConfig.getString('gpt_token');
+
+    final url = Uri.parse("https://api.openai.com/v1/chat/completions");
+
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $apiKey",
+      },
+      body: jsonEncode({
+        "model": "gpt-4o-mini", // fast + cheap
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a classifier. Only answer with one label: medicine, nutrition, synthetic, other."
+          },
+          {
+            "role": "user",
+            "content": question
+          }
+        ],
+        "max_tokens": 5,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      String category = data["choices"][0]["message"]["content"].trim().toLowerCase();
+      return category; // "medicine", "nutrition", "synthetic", or "other"
+    } else {
+      throw Exception("Failed to classify: ${response.body}");
+    }
+  }
+
+
   Future<void> sendMessage({int? iId, bool isReload = false}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -1485,6 +1530,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     if (Utility.promptController.text.isNotEmpty || _pickedFile != null) {
       scrollController.jumpTo(scrollController.position.maxScrollExtent);
       String question = Utility.promptController.text;
+
+      String category = await categorizeQuestion(question);
+      print("Category: $category");
+
+      final allowCategory = ['medicine', 'nutrition', 'synthetic'];
+      if (!allowCategory.contains(category)) {
+        flutterToastCenter(
+          'Invalid input. Please enter a valid medicine, nutrition fact, or synthetic item.',
+        );
+        return;
+      }
 
       // Track specific questions
       isQuestion1 = question == question1;
