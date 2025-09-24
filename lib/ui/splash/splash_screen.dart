@@ -61,7 +61,7 @@ class _SplashScreenState extends State<SplashScreen> {
         if (!isOnBoard) {
           // FirebaseAuth.instance.signOut();
           // await AuthUtils.logout();
-          Get.offAll(WelcomeScreen1());
+          Get.offAll(WelcomeScreen());
           return;
         }
 

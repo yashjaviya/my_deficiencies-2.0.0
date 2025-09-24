@@ -449,8 +449,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             !getData &&
                                     !Utility.isType &&
                                     Utility.chatHistoryList.isNotEmpty &&
-                                    Utility.chatHistoryList.length >= 2 &&
-                                    !isAlreadyShowFirstQuestion
+                                    Utility.chatHistoryList.length >= 2
                                 ? SingleChildScrollView(
                                   scrollDirection: Axis.horizontal,
                                   padding: EdgeInsets.only(
@@ -463,7 +462,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                         CrossAxisAlignment.start,
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
-                                      if (isSubscribe || isReferenceUser)
+                                      if ((isSubscribe || isReferenceUser) && !isAlreadyShowFirstQuestion)
                                         Row(
                                           children: [
                                             GestureDetector(
@@ -471,9 +470,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                                 Utility.promptController.text =
                                                     question1;
                                                 sendMessage();
-                                                setState(() {
-                                                  isAlreadyShowFirstQuestion = true;
-                                                });
                                               },
                                               child: Container(
                                                 padding: EdgeInsets.symmetric(
@@ -918,10 +914,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                   onSubmitted: (value) {
                                     if (!getData) {
                                       sendMessage();
-
-                                      setState(() {
-                                        isAlreadyShowFirstQuestion = false;
-                                      });
                                     } else {
                                       flutterToastCenter("Analyzing...");
                                     }
@@ -1478,6 +1470,16 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   Future<String> categorizeQuestion(String question) async {
     final apiKey = remoteConfig.getString('gpt_token');
+    final lower = question.trim().toLowerCase();
+
+    // ❌ Block direct category words
+    const blockedKeywords = [
+      "medicine", "medicines", "medication", "medications", "drug", "drugs",
+      "nutrition", "nutrients", "synthetic", "synthetics"
+    ];
+    if (blockedKeywords.contains(lower)) {
+      return "other"; // or throw Exception("Search not allowed");
+    }
 
     final url = Uri.parse("https://api.openai.com/v1/chat/completions");
 
@@ -1488,11 +1490,22 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         "Authorization": "Bearer $apiKey",
       },
       body: jsonEncode({
-        "model": "gpt-4o-mini", // fast + cheap
+        "model": "gpt-4o-mini",
         "messages": [
           {
             "role": "system",
-            "content": "You are a classifier. Only answer with one label: medicine, nutrition, synthetic, other."
+            "content": """
+  You are a strict classifier. 
+  You must answer with only one label: medicine, nutrition, synthetic, other.
+
+  Definitions:
+  - medicine: drugs, medications, or treatments for diseases (e.g., aspirin, antibiotics, insulin).
+  - nutrition: food, diet, vitamins, minerals, or natural supplements (e.g., protein, vitamin C, vegetables).
+  - synthetic: man-made chemicals, artificial substances, or compounds not naturally occurring (e.g., plastics, synthetic hormones, lab-made drugs).
+  - other: anything that does not fit the above.
+
+  Respond with ONLY one word: medicine, nutrition, synthetic, or other.
+  """
           },
           {
             "role": "user",
@@ -1505,13 +1518,21 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      String category = data["choices"][0]["message"]["content"].trim().toLowerCase();
-      return category; // "medicine", "nutrition", "synthetic", or "other"
+
+      String category = data["choices"][0]["message"]["content"]
+          .trim()
+          .toLowerCase();
+
+      const validLabels = ["medicine", "nutrition", "synthetic", "other"];
+      if (!validLabels.contains(category)) {
+        category = "other";
+      }
+
+      return category;
     } else {
       throw Exception("Failed to classify: ${response.body}");
     }
   }
-
 
   Future<void> sendMessage({int? iId, bool isReload = false}) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -1531,20 +1552,22 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       scrollController.jumpTo(scrollController.position.maxScrollExtent);
       String question = Utility.promptController.text;
 
-      String category = await categorizeQuestion(question);
-      print("Category: $category");
-
-      final allowCategory = ['medicine', 'nutrition', 'synthetic'];
-      if (!allowCategory.contains(category)) {
-        flutterToastCenter(
-          'Invalid input. Please enter a valid medicine, nutrition fact, or synthetic item.',
-        );
-        return;
-      }
-
       // Track specific questions
       isQuestion1 = question == question1;
       isQuestion2 = question == question2;
+
+      if (!isQuestion1 && !isQuestion2) {
+        String category = await categorizeQuestion(question);
+        print("Category: $category");
+
+        final allowCategory = ['medicine', 'nutrition', 'synthetic'];
+        if (!allowCategory.contains(category)) {
+          flutterToastCenter(
+            'Invalid input. Please enter a valid medicine, nutrition fact, or synthetic item.',
+          );
+          return;
+        }
+      }
 
       Utility.isType = true;
       int id = 0;
@@ -1564,6 +1587,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       Utility.promptController.clear();
       containerHeight.value = 55.0;
       getData = true;
+
+      if ((isReferenceUser || isSubscribe) && !isAlreadyShowFirstQuestion && isQuestion1) {
+        setState(() {
+          isAlreadyShowFirstQuestion = true;
+        });
+      }
+
+      if ((isReferenceUser || isSubscribe) && isAlreadyShowFirstQuestion && !isQuestion1) {
+        setState(() {
+          isAlreadyShowFirstQuestion = false;
+        });
+      }
 
       Map<String, String>? extractedText;
 
@@ -1787,7 +1822,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           if (!isSubscribe) isShowPopup = true;
           Utility.isType = false;
 
-          if (isSubscribe) {
+          if (isSubscribe && !isQuestion1 && !isQuestion2) {
             setState(() {
               remainingToken -= 1;
             });
