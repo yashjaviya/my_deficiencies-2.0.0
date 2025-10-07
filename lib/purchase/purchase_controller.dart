@@ -247,11 +247,11 @@ class PurchaseController extends GetxController {
         addTokens = 2;
         expiryDate = DateTime.now().add(const Duration(days: 7)); // 1 week
       } else if (purchaseDetails.productID == "monthly49.99" || purchaseDetails.productID == 'monthly') {
-        addTokens = 109;
+        addTokens = 100;
         subPlan = 49.99;
         expiryDate = DateTime.now().add(const Duration(days: 30)); // approx 1 month
       } else if (purchaseDetails.productID == "yearly499.99" || purchaseDetails.productID == 'yearly') {
-        addTokens = 1310;
+        addTokens = 1300;
         subPlan = 499.99;
         expiryDate = DateTime.now().add(const Duration(days: 365)); // 1 year
       }

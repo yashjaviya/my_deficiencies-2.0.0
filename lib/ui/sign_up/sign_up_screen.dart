@@ -11,6 +11,7 @@ import 'package:my_deficiencies/common/dialog/dialog_widget.dart';
 import 'package:my_deficiencies/common/dialog/progress_dialog.dart';
 import 'package:my_deficiencies/model/reference_model.dart';
 import 'package:my_deficiencies/model/user_model.dart';
+import 'package:my_deficiencies/services/klaviyo_service.dart';
 import 'package:my_deficiencies/ui/home/home_screen.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -58,24 +59,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     progressDialog.show();
     try {
-      // Create user
+      // ✅ Create user in Firebase
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
-      // Update display name
+      // ✅ Update display name in Firebase
       await userCredential.user?.updateDisplayName(username);
       await userCredential.user?.reload();
 
-      // final ref = ReferenceModel( // code: "QmF3tX7kR9dLsT2vN6hCzY8pG5oM1jWa", // expiredDate: DateTime(2025, 12, 31, 23, 59), // isActive: true, // createdAt: DateTime.now(), // ); // // Save → returns the Firestore id // final generatedId = await saveReference(ref); // print("Saved with id: $generatedId");
-
+      // ✅ Save to Firestore (your model logic)
       final user = UserModel(
-        id: userCredential.user?.uid ?? "", 
-        email: email, 
+        id: userCredential.user?.uid ?? "",
+        email: email,
         remainingToken: 0,
         isReferenceUser: false,
         isSubscribe: false,
       );
       await UserModel.saveUser(user);
+
+      // ✅ Send Name + Email to Klaviyo
+      await KlaviyoService.addUserToKlaviyo(
+        email: email,
+        name: username,
+      );
 
       Fluttertoast.showToast(msg: 'Signup successful! Welcome $username');
       progressDialog.close();
@@ -133,29 +139,41 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final UserCredential userCredential =
           await FirebaseAuth.instance.signInWithCredential(oauthCredential);
 
-      // Optional: Update display name
+      // ✅ Build name
+      String displayName = "";
       if (appleCredential.givenName != null) {
-        await userCredential.user?.updateDisplayName(
-          '${appleCredential.givenName} ${appleCredential.familyName ?? ""}',
-        );
+        displayName =
+            '${appleCredential.givenName} ${appleCredential.familyName ?? ""}';
+        await userCredential.user?.updateDisplayName(displayName);
+      } else {
+        displayName = userCredential.user?.displayName ?? "";
       }
+
       progressDialog.close();
       Fluttertoast.showToast(msg: 'Signed in with Apple');
 
+      // ✅ Get Email
       String? email = appleCredential.email ?? userCredential.user?.email;
 
-      // If email is null, fallback to stored email from Firestore
       if (email != null) {
+        // ✅ Save user to Firestore
         final user = UserModel(
-          id: userCredential.user?.uid ?? "", 
-          email: email, 
+          id: userCredential.user?.uid ?? "",
+          email: email,
           remainingToken: 0,
           isReferenceUser: false,
           isSubscribe: false,
         );
         await UserModel.saveUser(user);
+
+        // ✅ Add/Update in Klaviyo
+        await KlaviyoService.addUserToKlaviyo(
+          email: email,
+          name: displayName.isNotEmpty ? displayName : "Apple User",
+        );
       }
 
+      // ✅ Success Dialog
       Get.dialog(
         name: '/DialogWidgetSuccessfully',
         DialogWidget(
@@ -170,15 +188,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
           },
           imageUrl: ImageData.icSuccess,
           title: 'Successfully\nLogin',
-          description:
-              'Congratulations, your account registration successfully',
+          description: 'Congratulations, your account registration successful',
           btnText: 'Home',
         ),
       );
     } on FirebaseAuthException catch (e) {
-      if (kDebugMode) {
-        print('FirebaseAuthException: - $e');
-      }
       progressDialog.close();
       if (kDebugMode) {
         print('code:- ${e.code} message:- ${e.message}');
@@ -211,6 +225,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
       loginFail(message);
     } catch (e) {
+      progressDialog.close();
       Fluttertoast.showToast(
         msg: kDebugMode ? 'Apple Sign-In Failed: $e' : 'Login Fail try again',
       );

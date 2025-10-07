@@ -146,8 +146,8 @@ class DBHelper {
     await db.update(
       "ChatListHistory",
       {'title': title},
-      where: 'id = ? AND currentDateAndTime = ? AND userId = ?',
-      whereArgs: [id, currentDateAndTime, userId],
+      where: 'id = ? AND userId = ?',
+      whereArgs: [id, userId],
     );
   }
 }

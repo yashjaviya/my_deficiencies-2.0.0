@@ -101,7 +101,6 @@ class TutorialVideoModel {
     final snapshot = await firestore
         .collection(collectionName)
         .where('isActive', isEqualTo: true)
-        .orderBy('order')
         .get();
 
     return snapshot.docs
@@ -114,7 +113,6 @@ class TutorialVideoModel {
     return firestore
         .collection(collectionName)
         .where('isActive', isEqualTo: true)
-        .orderBy('order')
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => TutorialVideoModel.fromMap(doc.id, doc.data())).toList());

@@ -12,6 +12,7 @@ import 'package:my_deficiencies/common/utility.dart';
 import 'package:my_deficiencies/firebase/remote_config.dart';
 import 'package:my_deficiencies/light_dark/light_dark_controller.dart';
 import 'package:my_deficiencies/model/reference_model.dart';
+import 'package:my_deficiencies/model/tutorial_video_model.dart';
 import 'package:my_deficiencies/model/user_model.dart';
 import 'package:my_deficiencies/purchase/purchase_controller.dart';
 import 'package:my_deficiencies/services/auth_service.dart';
@@ -32,6 +33,34 @@ class _SettingScreenState extends State<SettingScreen> {
   RemoteConfig remoteConfig = Get.put(RemoteConfig());
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool alreadyReferenceUser = false;
+  String howToUseVideoLink = '';
+
+  @override
+  void initState() {
+    super.initState();
+    getVideoLink();
+  }
+
+  Future<void> getVideoLink() async {
+    try {
+      final tutorials = await TutorialVideoModel.getAllActive();
+
+      if (tutorials.isNotEmpty) {
+        for (var row in tutorials) {
+          if (row.title == 'How To Use') {
+            setState(() {
+              howToUseVideoLink = row.videoUrl;
+            });
+            break; // stop loop once found
+          }
+        }
+
+        print('howYouseVideoLink ------ $howToUseVideoLink');
+      }
+    } catch (e) {
+      debugPrint("Error fetching tutorials: $e");
+    }
+  }
 
   Future<void> _logout() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -315,7 +344,7 @@ class _SettingScreenState extends State<SettingScreen> {
                   5.toDouble().hs,
                   TextButton(
                     onPressed: () async {
-                      await launchUrl(Utility.videoUrl);
+                      await launchUrl(Uri.parse(howToUseVideoLink));
                     },
                     child: Row(
                       children: [

@@ -66,9 +66,9 @@ class LightDarkController extends GetxController {
     // bool isLightChangeManually = prefs.getBool('isLightChangeManually') ?? false;
 
     if (isLight == null) {
-      this.isLight = !Get.isDarkMode;
+      this.isLight = Get.isDarkMode;
     } else {
-      this.isLight = isLight;
+      this.isLight = !Get.isDarkMode;
     }
     if (kDebugMode) {
       print('Get.isDarkMode ${Get.isDarkMode} ${this.isLight} $isLight');

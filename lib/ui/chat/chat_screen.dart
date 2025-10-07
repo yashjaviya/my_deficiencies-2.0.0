@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:clipboard/clipboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:markdown/markdown.dart' as md;
@@ -106,6 +107,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   static const String _key = "currentFreePromptIndex";
 
   bool _isAlreadyRunning = false;
+
+  bool isRunningProcess = false;
+
+  bool isShowSummaryBtn = false;
 
   List<Map<String, dynamic>> prompt = [];
 
@@ -290,6 +295,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       builder: (lightDarkController) {
         return Scaffold(
           backgroundColor: AppColor.bgColor,
+          resizeToAvoidBottomInset: true,
           appBar: AppBar(
             backgroundColor: AppColor.bgColor,
             forceMaterialTransparency: true,
@@ -450,87 +456,184 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                     !Utility.isType &&
                                     Utility.chatHistoryList.isNotEmpty &&
                                     Utility.chatHistoryList.length >= 2
-                                ? SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  padding: EdgeInsets.only(
-                                    top: 5,
-                                    left: 10,
-                                    right: 10,
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      if ((isSubscribe || isReferenceUser) && !isAlreadyShowFirstQuestion)
-                                        Row(
-                                          children: [
-                                            GestureDetector(
-                                              onTap: () {
-                                                Utility.promptController.text =
-                                                    question1;
-                                                sendMessage();
-                                              },
-                                              child: Container(
-                                                padding: EdgeInsets.symmetric(
-                                                  vertical: 10,
-                                                  horizontal: 20,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: AppColor.c303033,
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        20.0,
-                                                      ),
-                                                  border: Border.all(
-                                                    color: AppColor.borderColor,
-                                                  ),
-                                                ),
-                                                child: appText(
-                                                  title: displayQuestion1,
-                                                  color: AppColor.white,
-                                                ),
+                                ?
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    padding: EdgeInsets.only(top: 5, left: 10, right: 10),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        if (isSubscribe || isReferenceUser)
+                                          GestureDetector(
+                                            onTap: () async {
+                                              Uri uri = Uri.parse('https://balancednaturopathics.com/pages/free-15min-discovery-zoom-call-with-scott-e-burgess');
+                                              if(await canLaunchUrl(uri)) {
+                                                launchUrl(uri);
+                                              }
+                                            },
+                                            child: Container(
+                                              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                                              decoration: BoxDecoration(
+                                                color: AppColor.c303033,
+                                                borderRadius: BorderRadius.circular(20.0),
+                                                border: Border.all(color: AppColor.borderColor),
                                               ),
-                                            ),
-                                            10.toDouble().ws,
-                                          ],
-                                        ),
-
-                                      // Show this only when subscribed + reference user
-                                      if (isSubscribe || isReferenceUser)
-                                        GestureDetector(
-                                          onTap: () async {
-                                            Uri uri = Uri.parse(
-                                              'http://bit.ly/4n4ycJ5',
-                                            );
-                                            if (await canLaunchUrl(uri)) {
-                                              launchUrl(uri);
-                                            }
-                                          },
-                                          child: Container(
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 10,
-                                              horizontal: 20,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppColor.c303033,
-                                              borderRadius:
-                                                  BorderRadius.circular(20.0),
-                                              border: Border.all(
-                                                color: AppColor.borderColor,
+                                              child: appText(
+                                                title: 'Schedule a Free 15min Discovery Call',
+                                                color: AppColor.white,
+                                                textAlign: TextAlign.left
                                               ),
-                                            ),
-                                            child: appText(
-                                              title:
-                                                  'Would you like to schedule a\nconsultative 15min discovery call?',
-                                              color: AppColor.white,
-                                              textAlign: TextAlign.left,
                                             ),
                                           ),
-                                        ),
-                                    ],
-                                  ),
-                                )
+                                          10.toDouble().ws,
+
+                                        if ((isSubscribe || isReferenceUser) && !isAlreadyShowFirstQuestion)
+                                          Row(
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () {
+                                                  Utility.promptController.text = question1;
+                                                  sendMessage();
+                                                  setState(() {});
+                                                },
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColor.c303033,
+                                                    borderRadius: BorderRadius.circular(20.0),
+                                                    border: Border.all(color: AppColor.borderColor),
+                                                  ),
+                                                  child: appText(
+                                                    title: displayQuestion1,
+                                                    color: AppColor.white,
+                                                  ),
+                                                ),
+                                              ),
+                                              10.toDouble().ws,
+                                            ],
+                                          ),
+
+                                      // isQuestion2 ? Container() : GestureDetector(
+                                      //    onTap: () {
+                                      //      Utility.promptController.text = question2;
+                                      //      sendMessage();
+                                      //      setState(() {});
+                                      //    },
+                                      //    child: Container(
+                                      //      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                                      //      decoration: BoxDecoration(
+                                      //        color: AppColor.c303033,
+                                      //        borderRadius: BorderRadius.circular(20.0),
+                                      //        border: Border.all(color: AppColor.borderColor),
+                                      //      ),
+                                      //      child: appText(
+                                      //        title: displayQuestion2,
+                                      //        color: AppColor.white,
+                                      //        textAlign: TextAlign.left
+                                      //      ),
+                                      //    ),
+                                      //  ),
+                                      ],
+                                    ), 
+                                  )
+                                // Column(
+                                //     children: [
+                                //       // First Button -> Show Question (Condition 1)
+                                //       (((isSubscribe || isReferenceUser) && !isAlreadyShowFirstQuestion))
+                                //           ? Center(
+                                //               child: GestureDetector(
+                                //                 onTap: () {
+                                //                   Utility.promptController.text = question1;
+                                //                   sendMessage();
+                                //                 },
+                                //                 child: Padding(
+                                //                   padding: EdgeInsets.symmetric(
+                                //                     vertical: lightDarkController.isLight ? 10.0 : 5.0,
+                                //                     horizontal: 10.0,
+                                //                   ),
+                                //                   child: Container(
+                                //                     padding: const EdgeInsets.symmetric(
+                                //                       vertical: 10,
+                                //                       horizontal: 20,
+                                //                     ),
+                                //                     decoration: BoxDecoration(
+                                //                       color: AppColor.containerColor.withValues(alpha: 0.3),
+                                //                       borderRadius: BorderRadius.circular(30.0),
+                                //                       border: Border.all(
+                                //                         color: AppColor.borderColor,
+                                //                       ),
+                                //                     ),
+                                //                     child: Row(
+                                //                       mainAxisSize: MainAxisSize.min,
+                                //                       children: [
+                                //                         appText(
+                                //                           title: displayQuestion1,
+                                //                           color: AppColor.white,
+                                //                           fontWeight: FontWeight.w300,
+                                //                           fontSize: 16,
+                                //                           textAlign: TextAlign.center,
+                                //                         ),
+                                //                       ],
+                                //                     ),
+                                //                   ),
+                                //                 ),
+                                //               ),
+                                //             )
+                                //           : const SizedBox.shrink(),
+
+                                //       // Second Button -> Call (Condition 2)
+                                //       ((isSubscribe || isReferenceUser) && !isAlreadyShowFirstQuestion)
+                                //           ? Padding(
+                                //               padding: const EdgeInsets.only(top: 5.0),
+                                //               child: InkWell(
+                                //                 onTap: () async {
+                                //                   Uri uri = Uri.parse(
+                                //                     'https://balancednaturopathics.com/pages/free-15min-discovery-zoom-call-with-scott-e-burgess',
+                                //                   );
+                                //                   if (await canLaunchUrl(uri)) {
+                                //                     launchUrl(uri);
+                                //                   }
+                                //                 },
+                                //                 child: Container(
+                                //                   decoration: BoxDecoration(
+                                //                     color: AppColor.containerColor.withValues(alpha: 0.3),
+                                //                     borderRadius: BorderRadius.circular(30.0),
+                                //                     border: Border.all(
+                                //                       color: AppColor.borderColor,
+                                //                     ),
+                                //                   ),
+                                //                   child: Padding(
+                                //                     padding: EdgeInsets.symmetric(
+                                //                       vertical: lightDarkController.isLight ? 10.0 : 5.0,
+                                //                       horizontal: 16.0,
+                                //                     ),
+                                //                     child: Row(
+                                //                       mainAxisSize: MainAxisSize.min,
+                                //                       children: [
+                                //                         Icon(
+                                //                           Icons.call,
+                                //                           color: AppColor.white,
+                                //                         ),
+                                //                         10.toDouble().ws,
+                                //                         appText(
+                                //                           title:
+                                //                               'Schedule a Free 15min Discovery Call'
+                                //                                   .tr,
+                                //                           color: AppColor.white,
+                                //                           fontWeight: FontWeight.w300,
+                                //                           fontSize: 16,
+                                //                           textAlign: TextAlign.center,
+                                //                         ),
+                                //                       ],
+                                //                     ),
+                                //                   ),
+                                //                 ),
+                                //               ),
+                                //             )
+                                //           : const SizedBox.shrink(),
+                                //     ],
+                                //   )
                                 : Container(),
                             Center(
                               child: GetBuilder<PurchaseController>(
@@ -539,6 +642,104 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                     visible: isShowPopup && !isSubscribe,
                                     child: Column(
                                       children: [
+                                        if (!isSubscribe && !isReferenceUser) 
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 10.0,
+                                            ),
+                                            child: InkWell(
+                                              onTap: () async {
+                                                Uri uri = Uri.parse(
+                                                    'https://balancednaturopathics.com/pages/free-15min-discovery-zoom-call-with-scott-e-burgess',
+                                                  );
+                                                  if (await canLaunchUrl(uri)) {
+                                                    launchUrl(uri);
+                                                  }
+                                              },
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: AppColor.c303033,
+                                                  borderRadius: BorderRadius.circular(20.0),
+                                                  border: Border.all(color: AppColor.borderColor),
+                                                ),
+                                                child: Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                    vertical:
+                                                        lightDarkController
+                                                                .isLight
+                                                            ? 10.0
+                                                            : 5.0,
+                                                    horizontal: 16.0,
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      // Icon(
+                                                      //   Icons.call,
+                                                      //   color: AppColor.white,
+                                                      // ),
+                                                      10.toDouble().ws,
+                                                      appText(
+                                                        title:
+                                                            'Schedule a Free 15min Discovery Call'
+                                                                .tr,
+                                                        color: AppColor.white,
+                                                        fontWeight:
+                                                            FontWeight.w300,
+                                                        fontSize: 16,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+
+                                        if (!isSubscribe && !isReferenceUser && isShowSummaryBtn)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 10.0),
+                                            child: Center(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  Utility.promptController.text = question1;
+                                                  sendMessage();
+                                                },
+                                                child: Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                    vertical: lightDarkController.isLight ? 10.0 : 5.0,
+                                                    horizontal: 10.0,
+                                                  ),
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      vertical: 10,
+                                                      horizontal: 20,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColor.c303033,
+                                                      borderRadius: BorderRadius.circular(20.0),
+                                                      border: Border.all(color: AppColor.borderColor),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        appText(
+                                                          title: displayQuestion1,
+                                                          color: AppColor.white,
+                                                          fontWeight: FontWeight.w300,
+                                                          fontSize: 16,
+                                                          textAlign: TextAlign.center,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+
                                         if (!isSubscribe && !isReferenceUser)
                                           Padding(
                                             padding: const EdgeInsets.only(
@@ -572,15 +773,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                               },
                                               child: Container(
                                                 decoration: BoxDecoration(
-                                                  color: AppColor.containerColor
-                                                      .withValues(alpha: 0.3),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        30.0,
-                                                      ),
-                                                  border: Border.all(
-                                                    color: AppColor.borderColor,
-                                                  ),
+                                                  color: AppColor.c303033,
+                                                  borderRadius: BorderRadius.circular(20.0),
+                                                  border: Border.all(color: AppColor.borderColor),
                                                 ),
                                                 child: Padding(
                                                   padding: EdgeInsets.symmetric(
@@ -620,9 +815,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                             ),
                                           ),
 
-                                        const SizedBox(
-                                          height: 12,
-                                        ), // spacing between buttons
+                                        // const SizedBox(
+                                        //   height: 12,
+                                        // ), // spacing between buttons
 
                                         if (freePlanCurrentIndex < 7 &&
                                             !isSubscribe &&
@@ -642,16 +837,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                               },
                                               child: Container(
                                                 decoration: BoxDecoration(
-                                                  color: AppColor.containerColor
-                                                      .withValues(alpha: 0.3),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        30.0,
-                                                      ),
-                                                  border: Border.all(
-                                                    color: AppColor.borderColor,
-                                                  ),
-                                                ),
+                                                color: AppColor.c303033,
+                                                borderRadius: BorderRadius.circular(20.0),
+                                                border: Border.all(color: AppColor.borderColor),
+                                              ),
                                                 child: Padding(
                                                   padding: EdgeInsets.symmetric(
                                                     vertical:
@@ -672,7 +861,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                                       10.toDouble().ws,
                                                       appText(
                                                         title:
-                                                            "Full Report (with Ads)"
+                                                            "Ad Version"
                                                                 .tr,
                                                         color: AppColor.white,
                                                         fontWeight:
@@ -763,34 +952,52 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                 border: Border.all(color: AppColor.borderColor),
                               ),
 
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  vertical:
-                                      lightDarkController.isLight ? 10.0 : 5.0,
-                                  horizontal: 16.0,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      CupertinoIcons.stop_circle,
-                                      color: AppColor.white,
+                              child: InkWell(
+                                onTap: () {
+                                  String? message = Utility.chatHistoryList[Utility.chatHistoryList.length - 1].message;
+
+                                  Utility.chatHistoryList[Utility.chatHistoryList.length - 1].isAnimation = false;
+                                  Utility.chatHistoryList[Utility.chatHistoryList.length - 1].message = message?.substring(0, message.length - controller.count.value);
+
+                                  // addChatListHistory.updateChatListHistory(Utility.chatHistoryList[Utility.chatHistoryList.length - 1].id, userID, message: message?.substring(0, message.length - controller.count.value), currentDateAndTime: Utility.chatHistoryList[Utility.chatHistoryList.length - 1].currentDateAndTime, isSender: Utility.chatHistoryList[Utility.chatHistoryList.length - 1].isSender);
+
+                                  // if (!getData) {
+                                  //   timer.cancel();
+                                  // }
+                                  getData = false;
+                                  Utility.isType = false;
+                                  if (mounted) {
+                                    setState(() {});
+                                  }
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppColor.containerColor.withValues(alpha: 0.3),
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    border: Border.all(color: AppColor.borderColor),
+                                  ),
+
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(vertical: lightDarkController.isLight ? 10.0 : 5.0, horizontal: 16.0),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          CupertinoIcons.stop_circle,
+                                          color: AppColor.white,
+                                        ),
+                                        5.toDouble().ws,
+                                        appText(title: "Analyzing Information".tr, color: AppColor.white, fontWeight: FontWeight.w300, fontSize: 16, textAlign: TextAlign.center),
+                                      ],
                                     ),
-                                    5.toDouble().ws,
-                                    appText(
-                                      title: "Analyzing Information".tr,
-                                      color: AppColor.white,
-                                      fontWeight: FontWeight.w300,
-                                      fontSize: 16,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
+                      15.toDouble().hs,
                       Visibility(
                         visible: Utility.chatHistoryList.isEmpty,
                         child: Container(
@@ -831,7 +1038,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_pickedFile != null)
+                          if (_pickedFile != null && !isRunningProcess)
                             Stack(
                               children: [
                                 ClipRRect(
@@ -886,171 +1093,151 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           Row(
                             children: [
                               Expanded(
-                                child: TextField(
-                                  onTapOutside: (event) {
-                                    FocusManager.instance.primaryFocus
-                                        ?.unfocus();
-                                  },
-                                  controller: Utility.promptController,
-                                  autofocus: true,
-                                  style: TextStyle(
-                                    color: AppColor.white,
-                                    fontFamily: 'gelasio',
-                                  ),
-                                  keyboardType: TextInputType.text,
-                                  keyboardAppearance:
-                                      lightDarkController.isLight
-                                          ? Brightness.light
-                                          : Brightness.dark,
-                                  maxLength: 500,
-                                  minLines: 1,
-                                  cursorColor: AppColor.white,
-                                  maxLines: 10,
-                                  onChanged: (value) {
-                                    if (mounted) {
-                                      setState(() {});
-                                    }
-                                  },
-                                  onSubmitted: (value) {
-                                    if (!getData) {
-                                      sendMessage();
-                                    } else {
-                                      flutterToastCenter("Analyzing...");
-                                    }
-                                  },
-                                  buildCounter: (
-                                    context, {
-                                    required int? currentLength,
-                                    required bool? isFocused,
-                                    required int? maxLength,
-                                  }) {
-                                    return Visibility(
-                                      visible:
-                                          Utility.promptController.text != "",
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          IconButton(
-                                            onPressed: () {
-                                              Utility.promptController.text =
-                                                  "";
-                                              if (mounted) {
-                                                setState(() {});
-                                              }
-                                            },
-                                            icon: Icon(
-                                              CupertinoIcons.clear_circled,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: TextField(
+                                    onTapOutside: (event) {
+                                      FocusManager.instance.primaryFocus?.unfocus();
+                                    },
+                                    controller: Utility.promptController,
+                                    autofocus: true,
+                                    style: TextStyle(
+                                      color: AppColor.white,
+                                      fontFamily: 'gelasio',
+                                    ),
+                                    keyboardType: TextInputType.text,
+                                    keyboardAppearance: lightDarkController.isLight
+                                        ? Brightness.light
+                                        : Brightness.dark,
+                                    maxLength: 500,
+                                    minLines: 1,
+                                    cursorColor: AppColor.white,
+                                    maxLines: 10,
+                                    onChanged: (value) {
+                                      if (mounted) {
+                                        setState(() {});
+                                      }
+                                    },
+                                    onSubmitted: (value) {
+                                      if (!getData) {
+                                        sendMessage();
+                                      } else {
+                                        flutterToastCenter("Analyzing...");
+                                      }
+                                    },
+                                    buildCounter: (
+                                      context, {
+                                      required int? currentLength,
+                                      required bool? isFocused,
+                                      required int? maxLength,
+                                    }) {
+                                      return Visibility(
+                                        visible: Utility.promptController.text != "",
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            IconButton(
+                                              onPressed: () {
+                                                Utility.promptController.text = "";
+                                                if (mounted) {
+                                                  setState(() {});
+                                                }
+                                              },
+                                              icon: Icon(
+                                                CupertinoIcons.clear_circled,
+                                                color: AppColor.white,
+                                              ),
+                                            ),
+                                            appText(
+                                              title:
+                                                  "${Utility.promptController.text.length}/$maxLength",
                                               color: AppColor.white,
+                                              fontWeight: FontWeight.w400,
+                                              fontSize: 12,
+                                              textAlign: TextAlign.center,
                                             ),
-                                          ),
-                                          appText(
-                                            title:
-                                                "${Utility.promptController.text.length}/$maxLength",
-                                            color: AppColor.white,
-                                            fontWeight: FontWeight.w400,
-                                            fontSize: 12,
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                    decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor: AppColor.containerColor,
+                                      isDense: true,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                        horizontal: 18,
                                       ),
-                                    );
-                                  },
-                                  decoration: InputDecoration(
-                                    filled: true,
-                                    fillColor: AppColor.containerColor,
-                                    isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                      horizontal: 18,
-                                    ),
-                                    hintText:
-                                        "Type your medication / synthetic vitamin",
-                                    hintStyle: TextStyle(
-                                      color: AppColor.c949BA5,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w400,
-                                      fontFamily: 'Gelasio',
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(25),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(25),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(25),
-                                      borderSide: BorderSide(
-                                        color: AppColor.borderColor,
-                                        width: 1.5,
+                                      hintText: "Type your medication / synthetic vitamin",
+                                      hintStyle: TextStyle(
+                                        color: AppColor.c949BA5,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w400,
+                                        fontFamily: 'Gelasio',
                                       ),
-                                    ),
-                                    suffixIcon: Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          // Upload icon
-                                          InkWell(
-                                            onTap: _pickImage,
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.fromLTRB(
-                                                    4.0,
-                                                    8.0,
-                                                    4.0,
-                                                    8.0,
-                                                  ),
-                                              child: Icon(
-                                                Icons.attach_file_rounded,
-                                                size: 24,
-                                                color: AppColor.white,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                        borderSide: BorderSide(
+                                          color: AppColor.borderColor,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      suffixIcon: Padding(
+                                        padding: const EdgeInsets.only(right: 10),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            // Upload icon
+                                            InkWell(
+                                              onTap: _pickImage,
+                                              borderRadius: BorderRadius.circular(20),
+                                              child: Padding(
+                                                padding: const EdgeInsets.fromLTRB(4.0, 8.0, 4.0, 8.0),
+                                                child: Icon(
+                                                  Icons.attach_file_rounded,
+                                                  size: 24,
+                                                  color: AppColor.white,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 8),
+                                            const SizedBox(width: 8),
 
-                                          // Send icon
-                                          InkWell(
-                                            onTap: () async {
-                                              if (!getData) {
-                                                sendMessage();
-                                              } else {
-                                                flutterToastCenter(
-                                                  "Analyzing...",
-                                                );
-                                              }
-                                            },
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.fromLTRB(
-                                                    4.0,
-                                                    8.0,
-                                                    4.0,
-                                                    8.0,
-                                                  ),
-                                              child: Icon(
-                                                Icons.send_rounded,
-                                                size: 24,
-                                                color: AppColor.white,
+                                            // Send icon
+                                            InkWell(
+                                              onTap: () async {
+                                                if (!getData) {
+                                                  sendMessage();
+                                                } else {
+                                                  flutterToastCenter("Analyzing...");
+                                                }
+                                              },
+                                              borderRadius: BorderRadius.circular(20),
+                                              child: Padding(
+                                                padding: const EdgeInsets.fromLTRB(4.0, 8.0, 4.0, 8.0),
+                                                child: Icon(
+                                                  Icons.send_rounded,
+                                                  size: 24,
+                                                  color: AppColor.white,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                             ],
+
                           ),
                         ],
                       ),
@@ -1220,53 +1407,105 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
   }
 
+  // String _formatExtractedText(Map<String, String> data) {
+
+  //   print('data >>>>>>>>>>>>>>>>>>>>>>>> $data');
+
+  //   StringBuffer buffer = StringBuffer();
+
+  //   void addSection(String title) {
+  //     buffer.writeln('---\n$title');
+  //   }
+
+  //   addSection('Medicine Information');
+  //   buffer.writeln(
+  //     'Medicine: ${data['Medicine Information_Medicine'] ?? 'Not found'}',
+  //   );
+  //   buffer.writeln('Form: ${data['Medicine Information_Form'] ?? 'Not found'}');
+  //   buffer.writeln(
+  //     'Active Ingredients: ${data['Medicine Information_Active Ingredients'] ?? 'Not found'}',
+  //   );
+  //   buffer.writeln(
+  //     'Dosage: ${data['Medicine Information_Dosage'] ?? 'Not found'}',
+  //   );
+
+  //   addSection('Nutrition Facts');
+  //   buffer.writeln(
+  //     'Serving Size: ${data['Nutrition Facts_Serving Size'] ?? 'Not found'}',
+  //   );
+  //   buffer.writeln(
+  //     'Calories: ${data['Nutrition Facts_Calories'] ?? 'Not found'}',
+  //   );
+  //   buffer.writeln(
+  //     'Total Fat: ${data['Nutrition Facts_Total Fat'] ?? 'Not found'}',
+  //   );
+  //   buffer.writeln(
+  //     'Carbohydrates: ${data['Nutrition Facts_Carbohydrates'] ?? 'Not found'}',
+  //   );
+  //   buffer.writeln(
+  //     'Protein: ${data['Nutrition Facts_Protein'] ?? 'Not found'}',
+  //   );
+  //   buffer.writeln('Sugar: ${data['Nutrition Facts_Sugar'] ?? 'Not found'}');
+  //   buffer.writeln(
+  //     'Other Nutrients: ${data['Nutrition Facts_Other Nutrients'] ?? 'Not found'}',
+  //   );
+
+  //   addSection('Synthetic Ingredients');
+  //   buffer.writeln(data['Synthetic Ingredients'] ?? 'None');
+
+  //   buffer.writeln('---');
+
+  //   return buffer.toString();
+  // }
+
   String _formatExtractedText(Map<String, String> data) {
+    print('data >>>>>>>>>>>>>>>>>>>>>>>> $data');
+
     StringBuffer buffer = StringBuffer();
 
-    void addSection(String title) {
-      buffer.writeln('---\n$title');
+    // Medicine Information
+    if (data.keys.any((k) => k.toLowerCase().contains('medicine'))) {
+      buffer.writeln('---\nMedicine Information');
+
+      if (data.containsKey('Medicine Information_Medicine')) {
+        buffer.writeln('Medicine: ${data['Medicine Information_Medicine']}');
+      }
+      if (data.containsKey('Medicine Information_Form')) {
+        buffer.writeln('Form: ${data['Medicine Information_Form']}');
+      }
+      if (data.containsKey('Medicine Information_Active Ingredients')) {
+        buffer.writeln(
+            'Active Ingredients: ${data['Medicine Information_Active Ingredients']}');
+      }
+      if (data.containsKey('Medicine Information_Dosage')) {
+        buffer.writeln('Dosage: ${data['Medicine Information_Dosage']}');
+      }
     }
 
-    addSection('Medicine Information');
-    buffer.writeln(
-      'Medicine: ${data['Medicine Information_Medicine'] ?? 'Not found'}',
-    );
-    buffer.writeln('Form: ${data['Medicine Information_Form'] ?? 'Not found'}');
-    buffer.writeln(
-      'Active Ingredients: ${data['Medicine Information_Active Ingredients'] ?? 'Not found'}',
-    );
-    buffer.writeln(
-      'Dosage: ${data['Medicine Information_Dosage'] ?? 'Not found'}',
-    );
+    // Nutrients
+    if (data.containsKey('Nutrients')) {
+      buffer.writeln('---\nNutrition Facts');
+      buffer.writeln('Nutrients: ${data['Nutrients']}');
+    } else if (data.keys.any((k) => k.toLowerCase().contains('nutrition'))) {
+      buffer.writeln('---\nNutrition Facts');
+      data.forEach((key, value) {
+        if (key.toLowerCase().contains('nutrition facts')) {
+          buffer.writeln('${key.replaceAll('Nutrition Facts_', '')}: $value');
+        }
+      });
+    }
 
-    addSection('Nutrition Facts');
-    buffer.writeln(
-      'Serving Size: ${data['Nutrition Facts_Serving Size'] ?? 'Not found'}',
-    );
-    buffer.writeln(
-      'Calories: ${data['Nutrition Facts_Calories'] ?? 'Not found'}',
-    );
-    buffer.writeln(
-      'Total Fat: ${data['Nutrition Facts_Total Fat'] ?? 'Not found'}',
-    );
-    buffer.writeln(
-      'Carbohydrates: ${data['Nutrition Facts_Carbohydrates'] ?? 'Not found'}',
-    );
-    buffer.writeln(
-      'Protein: ${data['Nutrition Facts_Protein'] ?? 'Not found'}',
-    );
-    buffer.writeln('Sugar: ${data['Nutrition Facts_Sugar'] ?? 'Not found'}');
-    buffer.writeln(
-      'Other Nutrients: ${data['Nutrition Facts_Other Nutrients'] ?? 'Not found'}',
-    );
-
-    addSection('Synthetic Ingredients');
-    buffer.writeln(data['Synthetic Ingredients'] ?? 'None');
+    // Synthetic Ingredients
+    if (data.containsKey('Synthetic Ingredients')) {
+      buffer.writeln('---\nSynthetic Ingredients');
+      buffer.writeln(data['Synthetic Ingredients']);
+    }
 
     buffer.writeln('---');
 
     return buffer.toString();
   }
+
 
   Future<void> showNextVersion() async {
     _isAlreadyRunning =
@@ -1286,6 +1525,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     setState(() {
       freePlanCurrentIndex = nextIndex;
     });
+
+    print('nextIndex >>>>>> ${nextIndex}');
+
+    if (nextIndex == 7) {
+      setState(() {
+        isShowSummaryBtn = true;
+      });
+    }
 
     // Check if nextIndex is within valid range (1 to 4)
     if (nextIndex > 7) {
@@ -1462,7 +1709,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     final buffer = StringBuffer();
 
     extractedText.forEach((key, value) {
-      buffer.writeln('$key: $value');
+      buffer.writeln('$value');
     });
 
     return buffer.toString();
@@ -1534,6 +1781,470 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
   }
 
+  Map<String, String> extractNutrientNames(Map<String, String> rawMap) {
+    final nutrientList = <String>[];
+    final output = <String, String>{};
+
+    rawMap.forEach((key, value) {
+      String cleanedKey = key.replaceAll(':', '').trim();
+
+      // 1️⃣ Medicine / synthetic info
+      if (cleanedKey.toLowerCase().contains("medicine information_medicine")) {
+        if (value.isNotEmpty) {
+          output[""] = value;
+        }
+        return; // skip further processing
+      }
+
+      // 2️⃣ Nutrients / vitamins / minerals
+      if (RegExp(
+        r'(vitamin|mineral|acid|thiamin|riboflavin|niacin|biotin|calcium|pantothenic acid|iodine|iron|zinc|selenium|folate|magnesium|choline|copper|manganese|chromium|molybdenum|boron|vanadium)',
+        caseSensitive: false
+      ).hasMatch(cleanedKey)) {
+
+        String nutrient = cleanedKey
+            .replaceAll(RegExp(r'(Nutrition Facts|Supplement Facts)[_-]*', caseSensitive: false), '')
+            .replaceAll(RegExp(r'[:\d]+.*'), '') // remove numbers
+            .replaceAll(RegExp(r'\b(mg|mcg|iu|g|dfe|%)\b', caseSensitive: false), '') // remove units
+            .replaceAll(RegExp(r'[%†\.\(\)_{}-]'), '') // remove symbols
+            .trim();
+
+        if (nutrient.isNotEmpty && !nutrientList.contains(nutrient)) {
+          nutrientList.add(nutrient);
+        }
+      }
+    });
+
+    // 3️⃣ Add nutrients list if exists
+    if (nutrientList.isNotEmpty) {
+      output[""] = nutrientList.join(', ');
+    }
+
+    return output;
+  }
+
+
+  // Future<void> sendMessage({int? iId, bool isReload = false}) async {
+  //   final user = FirebaseAuth.instance.currentUser;
+  //   if (user == null) {
+  //     Get.to(LoginScreen());
+  //     return;
+  //   }
+
+  //   if (isRunningProcess) {
+  //     flutterToastCenter(
+  //       'Analyzing...',
+  //     );
+  //     return;
+  //   }
+
+  //   isRunningProcess = true;
+
+  //   Future.delayed(Duration(seconds: 10), () {
+  //     isRunningProcess = false;
+  //   });
+
+  //   print('Utility.promptController.text >>>>>>> ${Utility.promptController.text}');
+
+  //   if (Utility.promptController.text != "Would you like an easy to read summary version of your report?") {
+  //     await setCurrentIndex(1);
+  //     setState(() {
+  //       freePlanCurrentIndex = 1;
+  //       isShowSummaryBtn = false;
+  //     });
+  //   }
+
+  //   FocusManager.instance.primaryFocus?.unfocus();
+
+  //   if (Utility.promptController.text.isNotEmpty || _pickedFile != null) {
+  //     scrollController.jumpTo(scrollController.position.maxScrollExtent);
+  //     String question = Utility.promptController.text;
+
+  //     // Track specific questions
+  //     isQuestion1 = question == question1;
+  //     isQuestion2 = question == question2;
+
+  //     if (!isQuestion1 && !isQuestion2 && _pickedFile == null) {
+  //       String category = await categorizeQuestion(question);
+  //       print("Category: $category");
+
+  //       final allowCategory = ['medicine', 'nutrition', 'synthetic'];
+  //       if (!allowCategory.contains(category)) {
+  //         flutterToastCenter(
+  //           'Invalid input. Please enter a valid medicine, nutrition fact, or synthetic item.',
+  //         );
+  //         Utility.promptController.clear();
+  //         return;
+  //       }
+  //     }
+
+  //     Utility.isType = true;
+  //     int id = 0;
+
+  //     try {
+  //       id =
+  //           Utility.isNewChat
+  //               ? 1
+  //               : (iId ?? 0) > 0
+  //               ? iId!
+  //               : Utility.chatHistoryList.last.id;
+  //     } catch (e) {
+  //       if (kDebugMode) print(e);
+  //     }
+
+  //     isShowPopup = false;
+  //     Utility.promptController.clear();
+  //     containerHeight.value = 55.0;
+  //     getData = true;
+
+  //     if ((isReferenceUser || isSubscribe) && !isAlreadyShowFirstQuestion && isQuestion1) {
+  //       setState(() {
+  //         isAlreadyShowFirstQuestion = true;
+  //       });
+  //     }
+
+  //     if ((isReferenceUser || isSubscribe) && isAlreadyShowFirstQuestion && !isQuestion1) {
+  //       setState(() {
+  //         isAlreadyShowFirstQuestion = false;
+  //       });
+  //     }
+
+  //     Map<String, String>? extractedText;
+
+  //     if (!isReload && _pickedFile != null) {
+  //       final rawMap = await extractProductLabelData(_pickedFile!.path);
+
+  //       print('rawMap >>>>>>> $rawMap');
+
+  //       // Pass the rawMap directly
+  //       if (rawMap != null) {
+  //         extractedText = extractNutrientNames(rawMap);
+  //       }
+
+  //       print('🧪 Extracted extractedText:\n$extractedText');
+
+  //       if (extractedText != null && rawMap != null && extractedText.isNotEmpty) {
+  //         String? initialName =
+  //             extractedText['Medicine Information_Medicine'] ??
+  //             extractedText['Medicine Information_Active Ingredients'] ??
+  //             '';
+
+  //         final combinedText =
+  //             extractedText != null ? combineExtractedText(extractedText) : '';
+
+  //         TextEditingController _medicineController = TextEditingController(
+  //           text: combinedText,
+  //         );
+
+  //         bool? userConfirmed = await showDialog<bool>(
+  //           context: context,
+  //           builder: (BuildContext context) {
+  //             return AlertDialog(
+  //               title: const Text("Confirm Extracted Text"),
+  //               content: TextField(
+  //                 controller: _medicineController,
+  //                 maxLines: null, // allow multiline and expand
+  //                 decoration: const InputDecoration(
+  //                   border: OutlineInputBorder(),
+  //                   labelText: "Extracted Text (Edit if needed)",
+  //                 ),
+  //               ),
+  //               actions: [
+  //                 TextButton(
+  //                   onPressed: () => {
+  //                     Navigator.of(context).pop(false),
+  //                     isRunningProcess = false
+  //                   },
+  //                   child: const Text(
+  //                     "No, Try Again",
+  //                     style: TextStyle(color: Colors.redAccent),
+  //                   ),
+  //                 ),
+  //                 ElevatedButton(
+  //                   onPressed: () => Navigator.of(context).pop(true),
+  //                   child: const Text("Yes, That’s Correct"),
+  //                 ),
+  //               ],
+  //             );
+  //           },
+  //         );
+
+  //         if (userConfirmed != true) {
+  //           if (mounted) {
+  //             setState(() {
+  //               _pickedFile = null;
+  //               getData = false;
+  //               Utility.isType = false;
+  //             });
+  //           }
+  //           flutterToastCenter("Image rejected. Please upload another one.");
+  //           return;
+  //         }
+
+  //         String extracted = _medicineController.text.trim();
+
+  //         if (question.isNotEmpty && extracted.isNotEmpty) {
+  //           question = "$question\n\nExtracted Info: $extracted";
+  //         } else if (extracted.isNotEmpty) {
+  //           question = extracted;
+  //         } else {
+  //           question = "Synthetics analyzed";
+  //         }
+
+  //         // question =
+  //         //     _medicineController.text.trim().isNotEmpty
+  //         //         ? _medicineController.text.trim()
+  //         //         : 'Synthetics analyzed';
+  //       } else {
+  //         await showDialog(
+  //           context: context,
+  //           builder: (BuildContext context) {
+  //             return AlertDialog(
+  //               title: const Text("Extraction Failed"),
+  //               content: const Text(
+  //                 "We couldn't extract any medication details from the image you provided. "
+  //                 "Please upload a clearer image or try a different one.",
+  //               ),
+  //               actions: [
+  //                 TextButton(
+  //                   onPressed: () => Navigator.of(context).pop(),
+  //                   child: const Text("OK"),
+  //                 ),
+  //               ],
+  //             );
+  //           },
+  //         );
+
+  //         if (mounted) {
+  //           setState(() {
+  //             _pickedFile = null;
+  //             getData = false;
+  //             Utility.isType = false;
+  //           });
+  //         }
+  //         return;
+  //       }
+
+  //       print('helllo we are here. >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+
+  //       Utility.chatHistoryList.add(
+  //         ChatListHistoryModel(
+  //           id: id,
+  //           userId: userID,
+  //           message: question,
+  //           currentDateAndTime: DateTime.now().toString(),
+  //           isSender: true,
+  //           isAnimation: false,
+  //           isGpt4: isSelected,
+  //           imagePath: _pickedFile?.path ?? '',
+  //           imageText:
+  //               extractedText != null
+  //                   ? _formatExtractedText(extractedText)
+  //                   : null,
+  //         ),
+  //       );
+  //     } else {
+  //       Utility.chatHistoryList.add(
+  //         ChatListHistoryModel(
+  //           id: id,
+  //           userId: userID,
+  //           message: question,
+  //           currentDateAndTime: DateTime.now().toString(),
+  //           isSender: true,
+  //           isAnimation: false,
+  //           isGpt4: isSelected,
+  //           imagePath: _pickedFile?.path ?? '',
+  //           imageText:
+  //               extractedText != null
+  //                   ? _formatExtractedText(extractedText)
+  //                   : null,
+  //         ),
+  //       );
+  //     }
+
+  //     if (Utility.chatHistoryList.length > 1) {
+  //       await DBHelper.updateData(
+  //         jsonEncode(Utility.chatHistoryList),
+  //         Utility.isSenderId,
+  //         userID,
+  //         DateTime.now().millisecondsSinceEpoch.toString(),
+  //         _pickedFile?.path ?? '',
+  //         extractedText != null ? _formatExtractedText(extractedText) : null,
+  //       );
+  //     } else {
+  //       Utility.isSenderId = await DBHelper.insert({
+  //         'title': Utility.chatHistoryList.first.message,
+  //         'userId': userID,
+  //         'message': jsonEncode(Utility.chatHistoryList),
+  //         'CurrentDateAndTime': DateTime.now().millisecondsSinceEpoch,
+  //         'imagePath': _pickedFile?.path ?? '',
+  //         'imageText': extractedText != null ? jsonEncode(extractedText) : null,
+  //       });
+  //     }
+
+  //     if (mounted) {
+  //       setState(() {
+  //         scrollController.jumpTo(scrollController.position.maxScrollExtent);
+  //       });
+  //     }
+
+  //     prompt.clear();
+  //     for (var chat in Utility.chatHistoryList) {
+  //       String? content = chat.imageText ?? chat.message;
+  //       String promptSuffix =
+  //           isQuestion1
+  //               ? remoteConfig.getString('prompt_view_questions_2_0_0')
+  //               : isQuestion2
+  //               ? remoteConfig.getString('prompt_view_questions2_2_0_0')
+  //               : (isSubscribe || isReferenceUser
+  //                   ? remoteConfig.getString(
+  //                     'prompt_view_premium_version_2_0_0',
+  //                   )
+  //                   : remoteConfig.getString('free_prompt_version_2_0_1'));
+
+  //       prompt.add({
+  //         'content': '$content $promptSuffix, not html format',
+  //         'role': chat.isSender ? 'user' : 'assistant',
+  //       });
+  //     }
+
+  //     setState(() {
+  //       _pickedFile = null;
+  //     });
+
+  //     try {
+  //       final apiKey = remoteConfig.getString('gpt_token');
+  //       final url = Uri.parse('https://api.openai.com/v1/responses');
+
+  //       final headers = {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': 'Bearer $apiKey',
+  //       };
+
+  //       final body = jsonEncode({
+  //         'model': 'gpt-4.1',
+  //         'instructions':
+  //             isSubscribe || isReferenceUser
+  //                 ? remoteConfig.getString('premium_prompt_version_2_0_0')
+  //                 : '${remoteConfig.getString('free_prompt_version_2_0_1')} not html format',
+  //         'input': prompt,
+  //       });
+
+  //       final response = await http.post(url, headers: headers, body: body);
+
+  //       if (response.statusCode == 200) {
+  //         final responseData = jsonDecode(response.body);
+  //         String answer = responseData['output'][0]['content'][0]['text'];
+
+  //         Utility.chatHistoryList.add(
+  //           ChatListHistoryModel(
+  //             id: id,
+  //             userId: userID,
+  //             message: answer,
+  //             currentDateAndTime: DateTime.now().toString(),
+  //             isSender: false,
+  //             isAnimation: false,
+  //             isGpt4: isSelected,
+  //           ),
+  //         );
+
+  //         Utility.isNewChat = false;
+  //         getData = false;
+  //         if (!isSubscribe) isShowPopup = true;
+  //         Utility.isType = false;
+
+  //         if (isSubscribe && !isQuestion1 && !isQuestion2) {
+  //           setState(() {
+  //             remainingToken -= 1;
+  //           });
+  //           if (remainingToken == 0) isSubscribe = false;
+
+  //           final prefs = await SharedPreferences.getInstance();
+  //           final String? userJson = prefs.getString("userData");
+  //           final Map<String, dynamic> userMap = jsonDecode(userJson!);
+  //           userMap["remainingToken"] = remainingToken;
+  //           userMap["isSubscribe"] = isSubscribe;
+  //           await prefs.setString("userData", jsonEncode(userMap));
+
+  //           await UserModel.update(loginUser!.uid, {
+  //             "remainingToken": remainingToken,
+  //             "isSubscribe": isSubscribe,
+  //           });
+
+  //           Get.snackbar("Success", "Your remaining token is $remainingToken");
+  //         }
+
+  //         if (mounted) {
+  //           setState(() {
+  //             scrollController.jumpTo(
+  //               scrollController.position.maxScrollExtent,
+  //             );
+  //           });
+  //         }
+
+  //         print('Utility.chatHistoryList 2 >> 2 >>2  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ${Utility.chatHistoryList}');
+
+  //         DBHelper.updateData(
+  //           jsonEncode(Utility.chatHistoryList),
+  //           Utility.isSenderId,
+  //           userID,
+  //           DateTime.now().millisecondsSinceEpoch.toString(),
+  //           '',
+  //           extractedText != null ? _formatExtractedText(extractedText) : null,
+  //         );
+
+  //         setState(() {
+  //           _pickedFile = null;
+  //         });
+  //       } else {
+  //         flutterToastCenter(
+  //           'Server Timed Out. Please copy medications, and enter again',
+  //         );
+  //       }
+  //     } catch (e) {
+  //       if (kDebugMode) {
+  //         print('🔥 Error in API request: $e');
+  //       }
+
+  //       Utility.chatHistoryList.add(
+  //         ChatListHistoryModel(
+  //           id: id,
+  //           userId: userID,
+  //           message:
+  //               'Server Timed Out. Please copy medications, and enter again',
+  //           currentDateAndTime: DateTime.now().toString(),
+  //           isSender: false,
+  //           isAnimation: false,
+  //           isGpt4: isSelected,
+  //         ),
+  //       );
+
+  //       await DBHelper.updateData(
+  //         jsonEncode(Utility.chatHistoryList),
+  //         Utility.isSenderId,
+  //         userID,
+  //         DateTime.now().millisecondsSinceEpoch.toString(),
+  //         '',
+  //         extractedText != null ? _formatExtractedText(extractedText) : null,
+  //       );
+
+  //       getData = false;
+  //       if (!isSubscribe) isShowPopup = true;
+  //       Utility.isType = false;
+
+  //       if (mounted) {
+  //         setState(() {
+  //           scrollController.jumpTo(scrollController.position.maxScrollExtent);
+  //         });
+  //       }
+  //     }
+  //   } else if (getData) {
+  //     if (mounted) flutterToastCenter("Wait few Seconds...");
+  //   } else {
+  //     if (mounted) flutterToastCenter("Write any one question.");
+  //   }
+  // }
+
   Future<void> sendMessage({int? iId, bool isReload = false}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -1541,10 +2252,27 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       return;
     }
 
-    await setCurrentIndex(1);
-    setState(() {
-      freePlanCurrentIndex = 1;
+    if (isRunningProcess) {
+      flutterToastCenter('Analyzing...');
+      return;
+    }
+
+    isRunningProcess = true;
+    getData = true;
+
+    Future.delayed(Duration(seconds: 5), () {
+      isRunningProcess = false;
     });
+
+    print('Utility.promptController.text >>>>>>> ${Utility.promptController.text}');
+
+    if (Utility.promptController.text != "Would you like an easy to read summary version of your report?") {
+      await setCurrentIndex(1);
+      setState(() {
+        freePlanCurrentIndex = 1;
+        isShowSummaryBtn = false;
+      });
+    }
 
     FocusManager.instance.primaryFocus?.unfocus();
 
@@ -1556,27 +2284,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       isQuestion1 = question == question1;
       isQuestion2 = question == question2;
 
-      if (!isQuestion1 && !isQuestion2) {
-        String category = await categorizeQuestion(question);
-        print("Category: $category");
-
-        final allowCategory = ['medicine', 'nutrition', 'synthetic'];
-        if (!allowCategory.contains(category)) {
-          flutterToastCenter(
-            'Invalid input. Please enter a valid medicine, nutrition fact, or synthetic item.',
-          );
-          return;
-        }
-      }
-
+      getData = false;
       Utility.isType = true;
       int id = 0;
 
       try {
-        id =
-            Utility.isNewChat
-                ? 1
-                : (iId ?? 0) > 0
+        id = Utility.isNewChat
+            ? 1
+            : (iId ?? 0) > 0
                 ? iId!
                 : Utility.chatHistoryList.last.id;
       } catch (e) {
@@ -1602,16 +2317,54 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
       Map<String, String>? extractedText;
 
+      /// ✅ STEP 1: Add to history immediately
+      final newMessage = ChatListHistoryModel(
+        id: id,
+        userId: userID,
+        message: question,
+        currentDateAndTime: DateTime.now().toString(),
+        isSender: true,
+        isAnimation: false,
+        isGpt4: isSelected,
+        imagePath: _pickedFile?.path ?? '',
+      );
+
+      Utility.chatHistoryList.add(newMessage);
+      if (mounted) setState(() {});
+
+      /// ✅ STEP 2: Validate only AFTER adding
+      if (!isQuestion1 && !isQuestion2 && _pickedFile == null) {
+        String category = await categorizeQuestion(question);
+        print("Category: $category");
+
+        final allowCategory = ['medicine', 'nutrition', 'synthetic'];
+        if (!allowCategory.contains(category)) {
+          /// ❌ Invalid input → remove message back
+          Utility.chatHistoryList.remove(newMessage);
+          Utility.isType = false;
+          if (mounted) setState(() {});
+
+          getData = false;
+          flutterToastCenter(
+            'Invalid input. Please enter a valid medicine, nutrition fact, or synthetic item.',
+          );
+          return;
+        }
+      }
+
+      // ✅ Now safe to continue with extraction & API flow
       if (!isReload && _pickedFile != null) {
-        extractedText = await extractProductLabelData(_pickedFile!.path);
+        final rawMap = await extractProductLabelData(_pickedFile!.path);
 
-        print('extractedText >>>>>>> $extractedText');
+        print('rawMap >>>>>>> $rawMap');
 
-        if (kDebugMode && extractedText != null) {
-          print('🧪 Extracted Text:\n${jsonEncode(extractedText)}');
+        if (rawMap != null) {
+          extractedText = extractNutrientNames(rawMap);
         }
 
-        if (extractedText != null) {
+        print('🧪 Extracted extractedText:\n$extractedText');
+
+        if (extractedText != null && rawMap != null && extractedText.isNotEmpty) {
           String? initialName =
               extractedText['Medicine Information_Medicine'] ??
               extractedText['Medicine Information_Active Ingredients'] ??
@@ -1631,7 +2384,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 title: const Text("Confirm Extracted Text"),
                 content: TextField(
                   controller: _medicineController,
-                  maxLines: null, // allow multiline and expand
+                  maxLines: null,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     labelText: "Extracted Text (Edit if needed)",
@@ -1639,7 +2392,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 ),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
+                    onPressed: () => {
+                      Navigator.of(context).pop(false),
+                      isRunningProcess = false
+                    },
                     child: const Text(
                       "No, Try Again",
                       style: TextStyle(color: Colors.redAccent),
@@ -1655,6 +2411,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           );
 
           if (userConfirmed != true) {
+            Utility.chatHistoryList.remove(newMessage);
             if (mounted) {
               setState(() {
                 _pickedFile = null;
@@ -1666,11 +2423,24 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             return;
           }
 
-          question =
-              _medicineController.text.trim().isNotEmpty
-                  ? _medicineController.text.trim()
-                  : 'Synthetics analyzed';
+          String extracted = _medicineController.text.trim();
+
+          if (question.isNotEmpty && extracted.isNotEmpty) {
+            question = "$question\n\nExtracted Info: $extracted";
+          } else if (extracted.isNotEmpty) {
+            question = extracted;
+          } else {
+            question = "Synthetics analyzed";
+          }
+
+          // Update last inserted message with extracted text
+          newMessage.message = question;
+          newMessage.imageText = _formatExtractedText(extractedText);
         } else {
+          _pickedFile = null;
+          getData = false;
+          Utility.isType = false;
+          Utility.chatHistoryList.remove(newMessage);
           await showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -1699,42 +2469,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           }
           return;
         }
-
-        Utility.chatHistoryList.add(
-          ChatListHistoryModel(
-            id: id,
-            userId: userID,
-            message: question,
-            currentDateAndTime: DateTime.now().toString(),
-            isSender: true,
-            isAnimation: false,
-            isGpt4: isSelected,
-            imagePath: _pickedFile?.path ?? '',
-            imageText:
-                extractedText != null
-                    ? _formatExtractedText(extractedText)
-                    : null,
-          ),
-        );
-      } else {
-        Utility.chatHistoryList.add(
-          ChatListHistoryModel(
-            id: id,
-            userId: userID,
-            message: question,
-            currentDateAndTime: DateTime.now().toString(),
-            isSender: true,
-            isAnimation: false,
-            isGpt4: isSelected,
-            imagePath: _pickedFile?.path ?? '',
-            imageText:
-                extractedText != null
-                    ? _formatExtractedText(extractedText)
-                    : null,
-          ),
-        );
       }
 
+      /// ✅ Save to DB only AFTER validation passed
       if (Utility.chatHistoryList.length > 1) {
         await DBHelper.updateData(
           jsonEncode(Utility.chatHistoryList),
@@ -1768,18 +2505,20 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             isQuestion1
                 ? remoteConfig.getString('prompt_view_questions_2_0_0')
                 : isQuestion2
-                ? remoteConfig.getString('prompt_view_questions2_2_0_0')
-                : (isSubscribe || isReferenceUser
-                    ? remoteConfig.getString(
-                      'prompt_view_premium_version_2_0_0',
-                    )
-                    : remoteConfig.getString('free_prompt_version_2_0_1'));
+                    ? remoteConfig.getString('prompt_view_questions2_2_0_0')
+                    : (isSubscribe || isReferenceUser
+                        ? remoteConfig.getString('prompt_view_premium_version_2_0_0')
+                        : remoteConfig.getString('free_prompt_version_2_0_1'));
 
         prompt.add({
           'content': '$content $promptSuffix, not html format',
           'role': chat.isSender ? 'user' : 'assistant',
         });
       }
+
+      setState(() {
+        _pickedFile = null;
+      });
 
       try {
         final apiKey = remoteConfig.getString('gpt_token');
@@ -1792,10 +2531,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
         final body = jsonEncode({
           'model': 'gpt-4.1',
-          'instructions':
-              isSubscribe || isReferenceUser
-                  ? remoteConfig.getString('premium_prompt_version_2_0_0')
-                  : '${remoteConfig.getString('free_prompt_version_2_0_1')} not html format',
+          'instructions': isSubscribe || isReferenceUser
+              ? remoteConfig.getString('premium_prompt_version_2_0_0')
+              : '${remoteConfig.getString('free_prompt_version_2_0_1')} not html format',
           'input': prompt,
         });
 
@@ -1850,8 +2588,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               );
             });
           }
-
-          print('Utility.chatHistoryList 2 >> 2 >>2  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ${Utility.chatHistoryList}');
 
           DBHelper.updateData(
             jsonEncode(Utility.chatHistoryList),
@@ -1913,6 +2649,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       if (mounted) flutterToastCenter("Write any one question.");
     }
   }
+
 
   String extractCode(String text) {
     final match = RegExp(r'```[a-zA-Z]*\n([\s\S]*?)```').firstMatch(text);
@@ -2018,7 +2755,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     !_isAlreadyRunning
                         ? (getData && message == "ABC")
                             ? Padding(
-                              padding: const EdgeInsets.all(5.0),
+                              padding: const EdgeInsets.all(10.0),
                               child: Column(
                                 crossAxisAlignment:
                                     isGradiant
@@ -2079,14 +2816,23 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                     ), // Instead of 8.toDouble().hs
                                   // GRADIENT STYLE
                                   if (isGradiant)
-                                    appText(
-                                      title: message,
-                                      textAlign: TextAlign.start,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 100,
-                                      height: 1.5,
-                                      fontSize: Utility.fontSize,
-                                      color: AppColor.white,
+                                    Linkify(
+                                      text: message,
+                                      style: TextStyle(
+                                        fontSize: Utility.fontSize,
+                                        color: AppColor.white,
+                                        height: 1.5,
+                                        fontFamily: 'gelasio',
+                                      ),
+                                      linkStyle: const TextStyle(
+                                        color: Colors.lightBlueAccent,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                      onOpen: (link) async {
+                                        if (await canLaunchUrl(Uri.parse(link.url))) {
+                                          await launchUrl(Uri.parse(link.url), mode: LaunchMode.externalApplication);
+                                        }
+                                      },
                                     )
                                   // HTML STYLE
                                   else if (message.startsWith('<'))
@@ -2214,6 +2960,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                           ),
                                           shrinkWrap: true,
                                           selectable: false,
+
+                                          onTapLink: (text, href, title) async {
+                                            if (href != null) {
+                                              final Uri url = Uri.parse(href);
+                                              if (await canLaunchUrl(url)) {
+                                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                                              } else {
+                                                debugPrint("Could not launch $url");
+                                              }
+                                            }
+                                          },
                                         ),
                                       ),
                                     ),

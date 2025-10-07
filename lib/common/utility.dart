@@ -38,10 +38,10 @@ class Utility {
   static bool isSound = true;
   static List<ChatListHistoryModel> chatHistoryList = [];
 
-  static Uri appPrivacy = Uri.parse('https://mydeficiencies.com/privacy-policy/');
-  static Uri termsAndCondition = Uri.parse('https://mydeficiencies.com/terms-and-conditions/');
-  static Uri medicalDisclaimer = Uri.parse('https://mydeficiencies.com/medical-disclaimer/');
-  static Uri understandingRegulatoryGaps = Uri.parse('https://mydeficiencies.com/understanding-regulatory-gaps/');
+  static Uri appPrivacy = Uri.parse('https://balancednaturopathics.com/pages/mydeficiencies-privacy-policy');
+  static Uri termsAndCondition = Uri.parse('https://balancednaturopathics.com/pages/mydeficiencies-terms-and-conditions');
+  static Uri medicalDisclaimer = Uri.parse('https://balancednaturopathics.com/pages/mydeficiencies-medical-disclaimer');
+  static Uri understandingRegulatoryGaps = Uri.parse('https://balancednaturopathics.com/pages/understanding-regulatory-gaps');
   static Uri videoUrl = Uri.parse('https://www.loom.com/share/c02ae5fcedc94278a4eef04d5d58a2d3?sid=4a830195-c9dc-4757-8d12-a5e6f5b6118e');
 
 

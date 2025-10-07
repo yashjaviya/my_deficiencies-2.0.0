@@ -58,6 +58,8 @@ class _SplashScreenState extends State<SplashScreen> {
         var user = FirebaseAuth.instance.currentUser;
         bool loggedIn = await AuthUtils.isLoggedIn();
 
+        print('isOnBoard ------ $isOnBoard');
+
         if (!isOnBoard) {
           // FirebaseAuth.instance.signOut();
           // await AuthUtils.logout();
@@ -66,8 +68,6 @@ class _SplashScreenState extends State<SplashScreen> {
         }
 
         FirebaseAuth.instance.authStateChanges().listen((User? tmpU) async {
-          print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> this is called ${loggedIn} ');
-          print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> this is called ${tmpU} ');
           user = tmpU;
           if(loggedIn && tmpU != null) {
             Get.offAll(HomeScreen());

@@ -114,8 +114,8 @@ class PrivacyScreen extends StatelessWidget {
 <p>Ask inside the app and the app will supply the exact reference you request or tell you if one isn&rsquo;t yet published.</p>
 <p>Disclaimer: MyDeficiencies is intended for educational and informational purposes only. It does not provide medical advice, diagnosis, or treatment, and is not a substitute for consultation with a qualified healthcare provider. Do not modify or discontinue any medication or supplement without first consulting a licensed medical professional. While we reference scientific studies, the app does not offer personalised medical recommendations. Use of this app is at your own discretion.</p>
 <p>&copy; 2025 MyDeficiencies. All rights reserved.</p>
-<p>Privacy Policy :-&nbsp;<a href="https://mydeficiencies.com/privacy-policy/">https://mydeficiencies.com/privacy-policy/</a></p>
-<p>Terms of Use :-&nbsp;<a href="https://mydeficiencies.com/terms-and-conditions/">https://mydeficiencies.com/terms-and-conditions/</a></p>
+<p>Privacy Policy :-&nbsp;<a href="https://balancednaturopathics.com/pages/mydeficiencies-privacy-policy">https://balancednaturopathics.com/pages/mydeficiencies-privacy-policy</a></p>
+<p>Terms of Use :-&nbsp;<a href="https://balancednaturopathics.com/pages/mydeficiencies-terms-and-conditions">https://balancednaturopathics.com/pages/mydeficiencies-terms-and-conditions</a></p>
 </div>
                 ''',
                 // baseUrl: Uri.parse(''),

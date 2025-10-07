@@ -187,6 +187,7 @@ import 'package:get/get.dart';
 import 'package:my_deficiencies/color/app_color.dart';
 import 'package:my_deficiencies/ui/login/login_screen.dart';
 import 'package:my_deficiencies/ui_widget/image_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -226,6 +227,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         });
       }
     } else if (_currentIndex == images.length - 1) {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      preferences.setBool('isOnBoard', true);
       Get.offAll(LoginScreen());
     }
   }
@@ -270,16 +273,209 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               }
             },
             itemBuilder: (context, index) {
-              return Padding(
-                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-                child: ImageWidget(
-                  imageUrl: images[index],
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  alignment: Alignment.topCenter,
-                ),
-              );
+              if (index == images.length - 1) {
+                // ✅ Last slide (Medical Disclaimer)
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Background image
+                    ImageWidget(
+                      imageUrl: images[index],
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      alignment: Alignment.topCenter,
+                    ),
+
+                    // Semi-transparent overlay for readability
+                    Container(
+                      color: Colors.black.withOpacity(0.6),
+                    ),
+
+                    // Scrollable Medical Disclaimer content
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 100), // ✅ extra space for button
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text(
+                                  "Medical Disclaimer",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 16),
+
+                                // 1. Purpose
+                                Text(
+                                  "1. Purpose of the My Deficiencies App",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  "MyDeficiencies is a research-driven educational tool that highlights the nutrient-depletion risks and physiological effects associated with prescription drugs, over-the-counter medications, and synthetic vitamins. It is not medical advice and does not replace consultation with a qualified healthcare professional.",
+                                  style: TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                                ),
+                                SizedBox(height: 16),
+
+                                // 2. Data Integrity
+                                Text(
+                                  "2. Data Integrity & Citation Protocol",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  "• Curate peer-reviewed evidence – All claims are drawn from trusted databases PubMed, NCBI, ScienceDirect, and the Cochrane Library.\n"
+                                  "• Show our work – Every report contains clickable citations so you can inspect the original study yourself.\n"
+                                  "• Refuse to guess – If no high-quality evidence exists for a requested substance, the app tells you directly.",
+                                  style: TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                                ),
+                                SizedBox(height: 16),
+
+                                // 3. What You'll See
+                                Text(
+                                  "3. What You’ll See in Each Report",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  "• Risk severity badge: Severe | Moderate | Low | Balanced\n"
+                                  "• Documented nutrient depletions (e.g., magnesium loss, B-vitamin demand)\n"
+                                  "• Short- and long-term physiological effects (e.g., oxidative stress, Micro-biome)\n"
+                                  "• Clickable peer-reviewed references for every claim",
+                                  style: TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                                ),
+                                SizedBox(height: 16),
+
+                                // 4. Source Alignment
+                                Text(
+                                  "4. Source-Alignment Verification",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  "Our four-step verification workflow ensures alignment:\n\n"
+                                  "• Direct Evidence First – Studies that investigate the exact drug, vitamin, or nutrient you entered.\n"
+                                  "• Mechanism Evidence Second – Research on biochemical pathways.\n"
+                                  "• Adjacent Evidence Third – High-quality reviews or nutrient-focused papers.\n"
+                                  "• Transparent Tagging – Each citation is marked as Direct, Mechanistic, or Adjacent.",
+                                  style: TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                                ),
+                                SizedBox(height: 16),
+
+                                // 5. Limitations
+                                Text(
+                                  "5. Limitations & User Responsibilities",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  "• Evidence Gaps: Most clinical trials examine a single agent; stacking data are rare.\n"
+                                  "• Evolving Science: New findings can change recommendations; check back for updates.\n"
+                                  "• Personal Variation: Genetics, diet, and lifestyle alter nutrient needs. Always consult a medical professional.",
+                                  style: TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                                ),
+                                SizedBox(height: 16),
+
+                                // 6. Talk to Your Clinician
+                                Text(
+                                  "6. Talk to Your Clinician",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  "MyDeficiencies is designed to inform discussions with your healthcare team. Do not start, stop, or change any medication or supplement regimen without professional guidance.",
+                                  style: TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                                ),
+                                SizedBox(height: 16),
+
+                                // 7. Verification
+                                Text(
+                                  "7. Need additional Verification?",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  "Ask inside the app and it will supply the exact reference you request or tell you if one isn’t yet published.",
+                                  style: TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                                ),
+                                SizedBox(height: 16),
+
+                                // Final Disclaimer
+                                Text(
+                                  "Disclaimer:",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  "MyDeficiencies is intended for educational and informational purposes only. It does not provide medical advice, diagnosis, or treatment, and is not a substitute for consultation with a qualified healthcare provider. Do not modify or discontinue any medication or supplement without first consulting a licensed medical professional. While we reference scientific studies, the app does not offer personalised medical recommendations. Use of this app is at your own discretion.",
+                                  style: TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                                ),
+                                SizedBox(height: 20),
+
+                                Text(
+                                  "© 2025 MyDeficiencies. All rights reserved.\nPrivacy Policy: https://balancednaturopathics.com/pages/mydeficiencies-privacy-policy",
+                                  style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                // ✅ Normal slides (1–4)
+                return Padding(
+                  padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+                  child: ImageWidget(
+                    imageUrl: images[index],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    alignment: Alignment.topCenter,
+                  ),
+                );
+              }
             },
           ),
 

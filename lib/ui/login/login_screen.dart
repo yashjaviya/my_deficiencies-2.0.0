@@ -228,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
           imageUrl: ImageData.icSuccess,
           title: 'Successfully\nLogin',
           description:
-              'Congratulations, your account registration is successfully',
+              'Congratulations, your account registration is successful',
           btnText: 'Continue',
         ),
       );

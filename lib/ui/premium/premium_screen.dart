@@ -106,11 +106,11 @@ class _PremiumScreenState extends State<PremiumScreen> {
         print('user.expiryDate ----- ${user.expiryDate}');
 
         if (user.subscriptionPlan == 4.99) {
-          userSubscriptionPlan = '2 Full Report';
+          userSubscriptionPlan = '2 Full Report / Ad Free';
         } else if (user.subscriptionPlan == 49.99) {
-          userSubscriptionPlan = '100 Full Report + 9 Free Report';
+          userSubscriptionPlan = '100 Full Report / Ad Free';
         } else if (user.subscriptionPlan == 499.99) {
-          userSubscriptionPlan = '1310 Full Report';
+          userSubscriptionPlan = '1300 Full Report / Ad Free';
         }
 
         isLoading = false;
@@ -555,6 +555,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                                           ),
                                           const SizedBox(width: 12),
                                           Expanded(
+                                            flex: 2,
                                             child: appText(
                                               title: skuModel.title,
                                               color: AppColor.white,
@@ -563,6 +564,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                                             ),
                                           ),
                                           Expanded(
+                                            flex: 1,
                                             child: appText(
                                               title: skuModel.price.replaceAll(
                                                   '\$',
